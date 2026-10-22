@@ -1,3 +1,3 @@
-# jobs-class1
+# QDA tutorials
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sushil-mathew/jobs-class1/HEAD?urlpath=rstudio)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sushil-mathew/qda/HEAD?urlpath=rstudio)
