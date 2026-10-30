@@ -1,0 +1,222 @@
+---
+title: "pakistansmallfirms"
+output: word_document
+date: "2026-10-29"
+---
+
+```{r libraries, message=FALSE, warning=FALSE}
+
+# Load tidyverse, which includes the packages: ggplot2 (a package for plots) and
+# dplyr (a package for wrangling data)
+library(tidyverse)
+
+# Load data: the `../` bit means "go to the folder one level above the folder in which this script is saved"
+load("../data/PakistanSmallFirms.RData")
+
+# Assign the loaded data to a dataframe called psf
+psf <- PakistanTeachingData
+```
+
+
+Let's first use the `table` command to see the number of people in the treatment and control groups. 0 refers to the Control Group, and 1 to the Treated group.
+
+```{r print-table-treatment-control}
+table(df$Treated)
+```
+Does the experiment have an equal split between the treated and control groups?
+
+
+## Descriptive Statistics: Balance Table
+
+Let's print the descriptive statistics and specifically the balance table. The balance table is supposed to tell us how well the randomization has taken place. That is, before the experiment has taken place, at the baseline, the treatment and control assignment should not predict their baseline characteristics.
+
+What is this table supposed to look like, and what do you expect to see?
+
+What would you have in the rows? What would you have in the columns? What would you have in the cells?
+
+In Lecture 3 and Tutorial 4 on Multiple Linear Regressions, we saw that we can use regressions with dummy variable regressors as a way to estimate means. We use the same procedure to calculate the means of the treatment and control groups.
+
+Let's revise this:
+
+If I ran the regression $y_i = \alpha + \epsilon_i$ (note, no $i$ on $\alpha$), what would $\alpha$ estimate?
+
+```{r}
+
+#Print mean of BaselineBusinessAssets
+print("Mean BaselineBusinessAssets: ")
+mean(psf$BaselineBusinessAssets)
+```
+
+```{r}
+# Run regression with BaselineBusinessAssets as the y variable, and no regressors, just an intercept (1 here means it's only an intercept)
+model1 <- lm(BaselineBusinessAssets ~ 1, data = psf)
+
+summary(model1)
+
+```
+
+If I ran the regression $y_i = \alpha + \beta D_i + \epsilon_i$ where $D_i$ is a dummy variable, what would $\hat\alpha$, $\hat\beta$ and $\hat\alpha + \hat\beta$ estimate?
+
+(Note: If after class, you Knit to Word, the above equations will be readable and formatted correctly)
+
+```{r}
+# Run regression
+model1 <- lm(BaselineBusinessAssets ~ Treated, data = psf)
+
+summary(model1)
+```
+Look at the table with `Coefficients:`. If each number in this table was denoted by `[r,c]` where `r` is the row number and `c` the column number, what would you expect to find in [2,1]?
+
+```{r}
+# Extract coefficients
+b <- coef(summary(model1))
+
+# Create table in the format: Column name = row entry
+tab <- data.frame(
+  Variable = "BaselineBusinessAssets",
+  ControlMean = b[1, 1],
+  TreatmentMean = b[1, 1] + b[2, 1],
+  MeanDifference = b[2, 1],
+  MeanDifference_PValue = b[2, 4]
+)
+
+# Print table up to 2 decimal places
+knitr::kable(tab, digits = 2)
+```
+
+Let's repeat this exercise for all the baseline variables. We use `for` loops which we had also used in Tutorial 2 on Simple Linear Regression. 
+
+```{r}
+# Variables in a list
+yvars <- c(
+  "BaselineHouseholdConsumption",
+  "BaselineManagementQuality",
+  "BaselineSchoolingExpenditure",
+  "BaselineTransportSector",
+  "BaselineBusinessAssets",
+  "BaselineBusinessRevenue"
+)
+
+# Create an empty table which we will fill up in the loop
+tab <- data.frame()
+
+# Loop through different y variables
+for (y in yvars) {
+
+  # Run regression by taking each y from the list yvar and create a formula y ~ Treated for the lm command
+  model <- lm(as.formula(paste(y, "~ Treated")), data = df)
+
+  # Extract coefficients
+  b <- coef(summary(model))
+
+  # Add results to table by creating a data table as in the previous chunk; rbind appends the tables from different loops
+  tab <- rbind(tab, data.frame(
+    Variable = y,
+    ControlMean = b[1, 1],
+    TreatmentMean = b[1, 1] + b[2, 1],
+    MeanDifference = b[2, 1],
+    MeanDifference_PValue = b[2, 4]
+  ))
+}
+
+# Print table
+knitr::kable(tab, digits = 2)
+```
+
+What do you conclude about how well the randomization has been conducted?
+
+## Cumulative Distribution Functions (CDFs): Baseline and Follow-up
+
+Let's make an Empirical CDF to show how the Baseline Business Asset varies between the treatment and control groups. 
+
+How do you read the graph?
+
+```{r}
+# Plot CDFs for Baseline Business Assets
+ggplot(psf, aes(x = BaselineBusinessAssets, color = factor(Treated))) +
+  stat_ecdf(geom = "step", linewidth = 1, linetype = "dotted") +
+  scale_color_manual(
+    values = c("0" = "dodgerblue", "1" = "firebrick1"),
+    labels = c("Control", "Treated")
+  ) +
+  labs(
+    title = "CDF of Baseline Business Assets",
+    subtitle = "Comparing Treated and Control Groups",
+    x = "Baseline Business Assets (USD)",
+    y = "Cumulative Probability",
+    color = "Group"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(labels = scales::comma)
+```
+
+Next we print the Business Asset levels at the end of the experiment. In the code below, the line after `ggplot(psf...) + ` starts as `(geom = "step", size = 1)`. This is not going to work. You'll need to add a phrase before `(geom = "step", size = 1)` to make it produce a CDF. How would you fix this code? 
+
+```{r}
+# Plot CDFs for Current (Follow-up) Business Assets
+ggplot(psf, aes(x = BusinessAssets, color = factor(Treated))) +
+  (geom = "step", linewidth = 1, linetype = "solid") +
+  scale_color_manual(
+    values = c("0" = "dodgerblue", "1" = "firebrick1"),
+    labels = c("Control", "Treated")
+  ) +
+  labs(
+    title = "CDF of Current Business Assets",
+    subtitle = "Comparing Treated and Control Groups",
+    x = "Current Business Assets (USD)",
+    y = "Cumulative Probability",
+    color = "Group"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(labels = scales::comma)
+```
+
+We can do one better, by putting the baseline and endline on the same plot. We use the same colours, and use dotted lines for baseline, and solid lines for endline.
+
+```{r}
+ggplot(psf, aes(color = factor(Treated))) +
+  stat_ecdf(
+    aes(x = BaselineBusinessAssets, linetype = "Baseline"),
+    geom = "step", linewidth = 1
+  ) +
+  stat_ecdf(
+    aes(x = BusinessAssets, linetype = "Endline"),
+    geom = "step", linewidth = 1
+  ) +
+  scale_color_manual(
+    values = c("0" = "dodgerblue", "1" = "firebrick1"),
+    labels = c("Control", "Treated")
+  ) +
+  scale_linetype_manual(
+    values = c("Baseline" = "dotted", "Endline" = "solid")
+  ) +
+  labs(
+    title = "CDF of Business Assets",
+    subtitle = "Baseline vs Endline: Treated and Control Groups",
+    x = "Business Assets (USD)",
+    y = "Cumulative Probability",
+    color = "Group",
+    linetype = "Survey Round"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(labels = scales::comma)
+```
+
+Describe what the plots show.
+
+What can you conclude about the effectiveness of the treatment on current business assets? Is it the same across all types of firms?
+
+## Regression analysis
+
+Let's estimate the impact of treatment on the current Business Assets. This code will not run. What do you need to change?
+
+```{r}
+ba_model_rct <- lm( ~ Treated, data = psf)
+
+summary(ba_model_rct)
+```
+
+How do you interpret the estimated `Treated` coefficient?
+Include as much information as possible in your interpretation. Here's one possible (and there could be many others) template:
+
+Providing the (description of treatment: the x variable) to (unit of analysis: what each row represents), has (increased/decreased) their (description of the y variable) by (coefficient) (and units of y), on average. (The last on average part is important, otherwise, it implies that everybody in the treated group unanimously had the same effect, which is not what we see on the CDF).
