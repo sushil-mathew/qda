@@ -21,7 +21,7 @@ psf <- PakistanTeachingData
 Let's first use the `table` command to see the number of people in the treatment and control groups. 0 refers to the Control Group, and 1 to the Treated group.
 
 ```{r print-table-treatment-control}
-table(df$Treated)
+table(psf$Treated)
 ```
 Does the experiment have an equal split between the treated and control groups?
 
@@ -104,7 +104,7 @@ tab <- data.frame()
 for (y in yvars) {
 
   # Run regression by taking each y from the list yvar and create a formula y ~ Treated for the lm command
-  model <- lm(as.formula(paste(y, "~ Treated")), data = df)
+  model <- lm(as.formula(paste(y, "~ Treated")), data = psf)
 
   # Extract coefficients
   b <- coef(summary(model))
