@@ -81,7 +81,6 @@ This notebook uses packages from the `tidyverse` package for data manipulation a
 ```{r setup, echo=TRUE, message=FALSE, warning=FALSE}
 library(tidyverse) # Collection of packages for data manipulation and visualisation
 library(knitr) # Formats output in R Markdown documents (.Rmd files such as this)
-library(here) # Creates reliable file paths to project folders
 ```
 
 This is the setup chunk, where we load the packages that will be used throughout the notebook.
@@ -101,7 +100,7 @@ Run this now. If you're prompted to install one or more of these packages, pleas
 
 
 ```{r load-data, echo=TRUE}
-load(here("data/tesco.RData"))
+load("../data/tesco.RData")
 ```
 
 ```{r inspect-data, echo=TRUE}
