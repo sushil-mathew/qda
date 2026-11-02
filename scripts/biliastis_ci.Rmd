@@ -1,0 +1,647 @@
+
+---
+title: "Biliastis Confidence Interval Analysis"
+output: html_document
+---
+
+```{r libraries, message=FALSE, warning=FALSE}
+
+# Load packages for data manipulation and plotting.
+library(tidyverse)
+# Load tools for tidy regression tables.
+library(broom)
+
+# Load the Biliastis dataset.
+load("../data/biliastis.RData")
+
+```
+
+
+## Drop the extreme outlier and de-mean variables
+
+Drop the one point that's an outlier. See the slides for this tutorial for its relevance. Create a new dataset without this outlier. 
+
+```{r remove-outlier}
+# Create a dataset for excluding the outlier.
+biliastis_outlierdropped <- biliastis %>%
+  # Keep observations within 8000 units of pump 1.
+  filter(distance_to_pump1 <= 8000)
+```
+
+
+```{r demean-variables}
+
+# Update the dataset with additional variables.
+biliastis_outlierdropped <- biliastis_outlierdropped %>%
+  # Create new variables in the dataset.
+  mutate(
+    # Define the de-meaned death rate.
+    death_rate_dm =
+      # Subtract the average death rate.
+      death_rate - mean(death_rate, na.rm = TRUE),
+    
+    # Define the de-meaned pestfield distance.
+    distance_to_pestfield_dm =
+      # Subtract the pestfield distance mean.
+      distance_to_pestfield -
+      # Calculate the average pestfield distance.
+      mean(distance_to_pestfield, na.rm = TRUE),
+    
+    # Define the de-meaned sewer distance.
+    distance_to_sewers_dm =
+      # Subtract the sewer distance mean.
+      distance_to_sewers -
+      # Calculate the average sewer distance.
+      mean(distance_to_sewers, na.rm = TRUE),
+    
+    # Define the de-meaned pump 1 distance.
+    distance_to_pump1_dm =
+      # Subtract the pump 1 distance mean.
+      distance_to_pump1 -
+      # Calculate the average pump 1 distance.
+      mean(distance_to_pump1, na.rm = TRUE),
+    
+    # Define the de-meaned pump 2 distance.
+    distance_to_pump2_dm =
+      # Subtract the pump 2 distance mean.
+      distance_to_pump2 -
+      # Calculate the average pump 2 distance.
+      mean(distance_to_pump2, na.rm = TRUE)
+  # Close the current function or loop.
+  )
+
+# Collect the de-meaned distance variable names.
+distance_vars_dm <- c(
+  # Include the named de-meaned distance variable.
+  "distance_to_pestfield_dm",
+  # Include the named de-meaned distance variable.
+  "distance_to_sewers_dm",
+  # Include the named de-meaned distance variable.
+  "distance_to_pump1_dm",
+  # Include the named de-meaned distance variable.
+  "distance_to_pump2_dm"
+# Close the concatenate (c) function.
+)
+```
+
+
+## Regression
+
+The analytical standard errors are produced in this regression output.
+
+```{r regression, fig.width=7, fig.height=5}
+
+# Fit the pump 1 linear regression.
+model <- lm(
+  # Regress de-meaned death rate on pump 1 distance.
+  death_rate_dm ~ distance_to_pump1_dm,
+  # Select the outlier-filtered dataset.
+  data = biliastis_outlierdropped
+# Close the current function or loop.
+)
+
+# Display the regression coefficients and statistics.
+tidy(model)
+
+```
+
+Now, we generate the bootstrapped standard error. 
+
+R can't generate truly random numbers in the way that we think of it. So, in the code below we give R something called a "seed". Using a seed, it produces a known set of numbers that are random in the sense that there's no order to it. However, a given seed produces the same set of random numbers always! So if you ran this code with the same seed as I set, you'd get the same bootstrap replications. For this reason these are called pseudo-random numbers. Random because for every seed, you'd get random numbers. Pseudo because for every seed, you'd get the same set of random numbers.
+
+```{r bootstrap-standard-errors}
+
+# Set a reproducible random seed.
+set.seed(123)
+
+# Set the number of bootstrap replications.
+B <- 10000
+
+# Repeat bootstrap estimation B times.
+bootstrap_estimates <- replicate(B, {
+  
+  # Begin drawing a bootstrap sample.
+  bootstrap_sample <- biliastis_outlierdropped %>%
+    # Sample all rows with replacement.
+    slice_sample(n = nrow(biliastis_outlierdropped), replace = TRUE)
+  
+  # Fit a regression on the resampled observations.
+  bootstrap_model <- lm(
+    # Regress de-meaned death rate on pump 1 distance.
+    death_rate_dm ~ distance_to_pump1_dm,
+    # Select the bootstrap sample for regression.
+    data = bootstrap_sample
+  # Close the current function or loop.
+  )
+  
+  # Extract the pump 1 slope estimate.
+  coef(bootstrap_model)["distance_to_pump1_dm"]
+# Close the current function or loop.
+})
+
+# Calculate the bootstrap standard error.
+bootstrap_se <- sd(bootstrap_estimates, na.rm = TRUE)
+
+# Display the bootstrap standard error.
+bootstrap_se
+```
+
+The analytical and bootstrapped errors are almost exactly the same, as you would expect based on your Lecture content.
+
+**This is going beyond the module**: In this specific dataset, that is based on geographic data, the bootstrapped standard errors calculate something slightly different (called robust or sandwich errors), but very similar in spirit to the analytical standard errors. It has almost exactly the same formula. For this case study, some might argue that even the robust errors are not the ``right'' standard errors to calculate. But the difference is so tiny in this case study and many practical cases that it doesn't turn out to matter much. We could either go with the analytical or bootstrapped errors which are very similar.
+
+All you need to know is that any standard error variant that you may encounter is broadly based on the same fundamental ideas you studied in the lecture.
+    
+    
+## Regression table
+
+We first extract the important numbers we need from the regression output, such as the coefficient estimate, the p-value, the standard error, the number of observations (N), and the goodness-of-fit measure $R^2$. 
+```{r regression-table}
+
+# Extract the regression results as a table.
+model_results <- tidy(model)
+
+# Select the pump 1 coefficient results.
+coef_pump1 <- model_results %>%
+  # Keep the pump 1 regression coefficient.
+  filter(term == "distance_to_pump1_dm")
+
+# Assign significance stars using p-values.
+stars <- case_when(
+  # Assign three stars for p-values below 0.01.
+  coef_pump1$p.value < 0.01 ~ "***",
+  # Assign two stars for p-values below 0.05.
+  coef_pump1$p.value < 0.05 ~ "**",
+  # Assign one star for p-values below 0.10.
+  coef_pump1$p.value < 0.10 ~ "*",
+  # Assign an empty label otherwise.
+  TRUE ~ ""
+# Close the current function or loop.
+)
+
+# Combine the coefficient and significance stars.
+coef_display <- paste0(
+  # Round the coefficient to four decimal places.
+  round(coef_pump1$estimate, 4),
+  # Append the significance stars.
+  stars
+# Close the current function or loop.
+)
+
+# Format the standard error in parentheses.
+se_display <- paste0(
+  # Insert an opening parenthesis.
+  "(",
+  # Round the standard error to six decimal places.
+  round(coef_pump1$std.error, 6),
+  # Insert a closing parenthesis.
+  ")"
+# Close the current function or loop.
+)
+
+# Count the regression observations.
+N <- nobs(model)
+# Extract the regression R-squared.
+r_squared <- summary(model)$r.squared
+
+# Create a regression summary table.
+regression_table <- tibble(
+  # Define the statistic labels.
+  Statistic = c(
+    # Label the pump 1 coefficient row.
+    "Distance to Pump 1",
+    # Leave a blank label for the standard error.
+    "",
+    # Label the observation count row.
+    "N",
+    # Label the R-squared row.
+    "R²"
+  # Execute the current analysis step.
+  ),
+  # Define the death rate results column.
+  `Death Rate` = c(
+    # Include the formatted coefficient.
+    coef_display,
+    # Include the formatted standard error.
+    se_display,
+    # Convert the observation count to text.
+    as.character(N),
+    # Round and format R-squared.
+    as.character(round(r_squared, 3))
+  # Close the current function or loop.
+  )
+# Close the current function or loop.
+)
+
+# Format the regression results as a table.
+knitr::kable(
+  # Supply the regression summary data.
+  regression_table,
+  # Align labels left and results centrally.
+  align = c("l", "c"),
+  # Set the table caption.
+  caption = "Regression Results"
+# Close the current function or loop.
+)
+
+# Print the significance star thresholds.
+cat("\n* p < 0.10; ** p < 0.05; *** p < 0.01")
+```
+
+## Spaghetti plot
+
+The scatterplot is the same as the previous week's problem set. We just add many lines instead of 1. We get the many lines from the bootstrap slope estimates.
+
+```{r bootstrap-spaghetti, fig.width=7, fig.height=5}
+
+# Create a table of bootstrap slopes.
+bootstrap_slopes <- tibble(
+  # Store the bootstrap estimates as slopes.
+  slope = bootstrap_estimates
+# Close the current function or loop.
+)
+
+# Create the bootstrap spaghetti plot.
+p <- ggplot(
+  # Select the filtered Biliastis observations.
+  biliastis_outlierdropped,
+  # Map pump 1 distance and death rate to axes.
+  aes(x = distance_to_pump1_dm, y = death_rate_dm)
+# Close this layer and add the next layer.
+) +
+  # Plot semi-transparent observations.
+  geom_point(alpha = 0.4) +
+  
+  # Draw the bootstrap regression lines.
+  geom_abline(
+    # Use the bootstrap slope table.
+    data = bootstrap_slopes,
+    # Set each line slope and zero intercept.
+    aes(slope = slope, intercept = 0),
+    # Make the bootstrap lines highly transparent.
+    alpha = 0.01
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Add a vertical zero reference line.
+  geom_vline(
+    # Position the vertical line at zero.
+    xintercept = 0,
+    # Display the reference line as dotted.
+    linetype = "dotted"
+  # Close this layer and add the next layer.
+  ) +
+  # Add a horizontal zero reference line.
+  geom_hline(
+    # Position the horizontal line at zero.
+    yintercept = 0,
+    # Display the reference line as dotted.
+    linetype = "dotted"
+  # Close this layer and add the next layer.
+  ) +
+  # Add plot titles and axis labels.
+  labs(
+    # Set the spaghetti plot title.
+    title = "Bootstrap Regression Lines",
+    # Label the horizontal distance axis.
+    x = "Distance to Pump 1 (de-meaned)",
+    # Label the vertical death rate axis.
+    y = "Death Rate (de-meaned)"
+  # Close this layer and add the next layer.
+  ) +
+  # Apply a minimal plot theme.
+  theme_minimal()
+
+# Display the completed plot.
+print(p)
+```
+
+## Coefficient Plot 
+
+We proceed by extracting the 95 and 99 confidence interval values of the slope estimate from the bootstrap estimates. Notice that we are drawing from the 2.5th and 97.5th percentiles of the slopes -- corresponding to the 95% confidence interval. Similarly, 0.5th and 99.5th percentiles correspond to the 99% confidence interval. 
+```{r coefficient-plot, fig.width=7, fig.height=4}
+
+# Create the pump 1 confidence interval table.
+coef_data <- tibble(
+  # Name the coefficient variable.
+  variable = "Distance to Pump 1",
+  # Extract the estimated pump 1 coefficient.
+  coefficient = coef(model)["distance_to_pump1_dm"],
+  # Calculate the lower 95% interval bound.
+  lower_95 = quantile(bootstrap_estimates, 0.025),
+  # Calculate the upper 95% interval bound.
+  upper_95 = quantile(bootstrap_estimates, 0.975),
+  # Calculate the lower 99% interval bound.
+  lower_99 = quantile(bootstrap_estimates, 0.005),
+  # Calculate the upper 99% interval bound.
+  upper_99 = quantile(bootstrap_estimates, 0.995)
+# Close the current function or loop.
+)
+
+# Start a coefficient plot.
+ggplot(
+  # Select the pump 1 coefficient summary.
+  coef_data,
+  # Map coefficients to x and variables to y.
+  aes(x = coefficient, y = variable)
+# Close this layer and add the next layer.
+) +
+  
+  # Draw a horizontal confidence interval.
+  geom_errorbarh(
+    # Set the 99% confidence interval endpoints.
+    aes(xmin = lower_99, xmax = upper_99),
+    # Remove the vertical error bar caps.
+    height = 0,
+    # Set a thin interval line width.
+    linewidth = 0.6
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Draw a horizontal confidence interval.
+  geom_errorbarh(
+    # Set the 95% confidence interval endpoints.
+    aes(xmin = lower_95, xmax = upper_95),
+    # Remove the vertical error bar caps.
+    height = 0,
+    # Set a thick interval line width.
+    linewidth = 1.5
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Mark each coefficient estimate with a point.
+  geom_point(size = 3) +
+  
+  # Add a vertical zero reference line.
+  geom_vline(
+    # Position the vertical line at zero.
+    xintercept = 0,
+    # Display the reference line as dotted.
+    linetype = "dotted"
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Add plot titles and axis labels.
+  labs(
+    # Label the coefficient axis.
+    x = "Coefficient",
+    # Remove the vertical axis title.
+    y = NULL,
+    # Set the plot title.
+    title = "Coefficient Estimate with 95% and 99% Confidence Intervals"
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Apply a minimal plot theme.
+  theme_minimal()
+```
+
+We can do even better by plotting all the coefficients on the same plot. We use a loop as in last class.
+
+```{r all-coefficients-plot, fig.width=7, fig.height=5}
+
+# Initialize an empty coefficient results table.
+all_coef_data <- tibble()
+
+# Loop over all de-meaned distance variables.
+for (distance in distance_vars_dm) {
+  
+  # Fit a regression for the current distance.
+  model_i <- lm(
+    # Build a regression formula for the current distance.
+    reformulate(distance, response = "death_rate_dm"),
+    # Select the outlier-filtered dataset.
+    data = biliastis_outlierdropped
+  # Close the current function or loop.
+  )
+  
+  # Repeat the current regression 10000 times.
+  bootstrap_i <- replicate(10000, {
+    
+    # Begin drawing a bootstrap sample.
+    bootstrap_sample <- biliastis_outlierdropped %>%
+      # Draw a bootstrap sample of rows.
+      slice_sample(
+        # Set the sample size equal to the dataset size.
+        n = nrow(biliastis_outlierdropped),
+        # Allow repeated selection of rows.
+        replace = TRUE
+      # Close the current function or loop.
+      )
+    
+    # Fit a regression on the resampled observations.
+    bootstrap_model <- lm(
+      # Build a regression formula for the current distance.
+      reformulate(distance, response = "death_rate_dm"),
+      # Select the bootstrap sample for regression.
+      data = bootstrap_sample
+    # Close the current function or loop.
+    )
+    
+    # Extract the current distance slope estimate.
+    coef(bootstrap_model)[distance]
+  # Close the current function or loop.
+  })
+  
+  # Append the current coefficient results.
+  all_coef_data <- bind_rows(
+    # Include previously collected coefficient results.
+    all_coef_data,
+    # Create a table for the current results.
+    tibble(
+      # Record the current distance variable.
+      variable = distance,
+      # Extract the current regression coefficient.
+      coefficient = coef(model_i)[distance],
+      # Calculate the lower 95% bootstrap bound.
+      lower_95 = quantile(bootstrap_i, 0.025, na.rm = TRUE),
+      # Calculate the upper 95% bootstrap bound.
+      upper_95 = quantile(bootstrap_i, 0.975, na.rm = TRUE),
+      # Calculate the lower 99% bootstrap bound.
+      lower_99 = quantile(bootstrap_i, 0.005, na.rm = TRUE),
+      # Calculate the upper 99% bootstrap bound.
+      upper_99 = quantile(bootstrap_i, 0.995, na.rm = TRUE)
+    # Close the current function or loop.
+    )
+  # Close the current function or loop.
+  )
+# End the current loop.
+}
+
+# Update the combined coefficient table.
+all_coef_data <- all_coef_data %>%
+  # Create new variables in the dataset.
+  mutate(
+    # Replace variable names with readable labels.
+    variable = recode(
+      # Select the variable names for recoding.
+      variable,
+      # Rename the pestfield variable.
+      "distance_to_pestfield_dm" = "Distance to Pestfield",
+      # Rename the sewer variable.
+      "distance_to_sewers_dm" = "Distance to Sewers",
+      # Rename the pump 1 variable.
+      "distance_to_pump1_dm" = "Distance to Pump 1",
+      # Rename the pump 2 variable.
+      "distance_to_pump2_dm" = "Distance to Pump 2"
+    # Close the current function or loop.
+    )
+  # Close the current function or loop.
+  )
+
+# Start a coefficient plot.
+ggplot(
+  # Include previously collected coefficient results.
+  all_coef_data,
+  # Map coefficients to x and variables to y.
+  aes(x = coefficient, y = variable)
+# Close this layer and add the next layer.
+) +
+  
+  # Draw a horizontal confidence interval.
+  geom_errorbarh(
+    # Set the 99% confidence interval endpoints.
+    aes(xmin = lower_99, xmax = upper_99),
+    # Remove the vertical error bar caps.
+    height = 0,
+    # Set a thin interval line width.
+    linewidth = 0.6
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Draw a horizontal confidence interval.
+  geom_errorbarh(
+    # Set the 95% confidence interval endpoints.
+    aes(xmin = lower_95, xmax = upper_95),
+    # Remove the vertical error bar caps.
+    height = 0,
+    # Set a thick interval line width.
+    linewidth = 1.5
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Mark each coefficient estimate with a point.
+  geom_point(size = 3) +
+  
+  # Add a vertical zero reference line.
+  geom_vline(
+    # Position the vertical line at zero.
+    xintercept = 0,
+    # Display the reference line as dotted.
+    linetype = "dotted"
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Add plot titles and axis labels.
+  labs(
+    # Label the coefficient axis.
+    x = "Coefficient",
+    # Remove the vertical axis title.
+    y = NULL,
+    # Set the plot title.
+    title = "Distance Coefficients with 95% and 99% Confidence Intervals"
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Apply a minimal plot theme.
+  theme_minimal()
+```
+
+
+The plots will look even better when the coefficient estimates are coloured. It's good practice to prime the viewers as much as possible. I like the method of colouring 0 and statistically insignificant estimates in grey, negative and statistically significant estimates in red, and positive and statistically significant estimates in blue. These colours naturally draw attention to, and convey information in a simple way.
+
+```{r coloured-coefficients-plot, fig.width=7, fig.height=5}
+
+# Update the combined coefficient table.
+all_coef_data <- all_coef_data %>%
+  # Create new variables in the dataset.
+  mutate(
+    # Classify coefficients by sign and significance.
+    colour_group = case_when(
+      # Mark intervals that include zero.
+      lower_99 <= 0 & upper_99 >= 0 ~ "99% CI includes zero",
+      # Classify positive coefficients.
+      coefficient > 0 ~ "Positive",
+      # Classify negative coefficients.
+      coefficient < 0 ~ "Negative"
+    # Close the current function or loop.
+    )
+  # Close the current function or loop.
+  )
+
+# Start a coefficient plot.
+ggplot(
+  # Include previously collected coefficient results.
+  all_coef_data,
+  # Map coefficient, variable, and colour group.
+  aes(x = coefficient, y = variable, colour = colour_group)
+# Close this layer and add the next layer.
+) +
+  
+  # Draw a horizontal confidence interval.
+  geom_errorbarh(
+    # Set the 99% confidence interval endpoints.
+    aes(xmin = lower_99, xmax = upper_99),
+    # Remove the vertical error bar caps.
+    height = 0,
+    # Set a thin interval line width.
+    linewidth = 0.6
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Draw a horizontal confidence interval.
+  geom_errorbarh(
+    # Set the 95% confidence interval endpoints.
+    aes(xmin = lower_95, xmax = upper_95),
+    # Remove the vertical error bar caps.
+    height = 0,
+    # Set a thick interval line width.
+    linewidth = 1.5
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Mark each coefficient estimate with a point.
+  geom_point(size = 3) +
+  
+  # Add a vertical zero reference line.
+  geom_vline(
+    # Position the vertical line at zero.
+    xintercept = 0,
+    # Display the reference line as dotted.
+    linetype = "dotted"
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Assign colours to coefficient groups.
+  scale_colour_manual(
+    # Define the manual colour mapping.
+    values = c(
+      # Colour positive coefficients light blue.
+      "Positive" = "lightskyblue",
+      # Colour negative coefficients red.
+      "Negative" = "indianred2",
+      # Colour intervals containing zero grey.
+      "99% CI includes zero" = "grey60"
+    # Close the current function or loop.
+    )
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Add plot titles and axis labels.
+  labs(
+    # Label the coefficient axis.
+    x = "Coefficient",
+    # Remove the vertical axis title.
+    y = NULL,
+    # Remove the colour legend title.
+    colour = NULL,
+    # Set the plot title.
+    title = "Distance Coefficients with 95% and 99% Confidence Intervals"
+  # Close this layer and add the next layer.
+  ) +
+  
+  # Apply a minimal plot theme.
+  theme_minimal() +
+  # Hide the colour legend.
+  theme(legend.position = "none")
+```

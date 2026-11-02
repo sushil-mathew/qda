@@ -1,0 +1,440 @@
+---
+title: "Exploring Tesco consumption across London's LSOAs"
+author: "Tutorial"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    df_print: paged
+  html_notebook:
+    toc: true
+    toc_float: true
+  pdf_document:
+    toc: true
+---
+
+# Introduction to markdown and coding
+
+## Header Section 
+
+The *header* contains information about the document and tells RStudio how the notebook should be produced. 
+
+## Writing regular text
+
+To write a regular paragraph, as a note to the reader, just click anywhere and write as you would in MS Word. A single hash is for title, double hash for subtitles, triple hash for sub-subtitles and so on. For a paragraph, press enter twice. 
+
+Markdown also supports **bold** (written like `**bold**`), *italic* (`*italic*`) and most other features that something like MS Word or Notes would allow. 
+
+## Writing code 
+
+R code is written inside **code chunks**.
+
+A code chunk begins with three backticks(`` ` ``) followed by `{r}` and ends with another three backticks.
+
+For example,
+
+```{r add-ones, echo = TRUE}
+1+1
+```
+
+You could also write code within the narrative, if you want to write a narrative about a line of code. Write a backtick, followed by the code and then another backtick, like so: `` `1+1` ``. This code cannot be executed, meaning that there is no way that this `` `1+1` `` will show as `` `2` ``. You can only execute it in a code chunk.
+
+Much of the R code you encounter follows one of two common patterns.
+
+The first assigns the result of an operation to an object: `a <- 1+1`.
+```{r assign-a, echo=TRUE}
+a <- 1+1
+```
+
+The arrow (`<-`) means "assign the result to this object."
+
+The second runs a function without saving the result: 
+
+```{r print-a1, echo=TRUE}
+print(a)
+```
+
+As you'll progress with R usage, you'll see other forms.
+
+## Running code 
+Each code chunk can be run separately. Use the green triangle at the top-right of the code chunk, or select **Run \> Run Current Chunk**.
+
+If you click the arrow on the right of Run, you can find other ways of running your scripts.
+
+## Writing comments
+
+To write a comment within a code chunk, simply write `#` and then what that line does. This is different from having a hash sign in plain text, which serves as a title.
+
+```{r print-a2, echo=TRUE}
+# Print a which has stored the result of 1 + 1 in chunk print-a1
+print(a)
+```
+
+When you work with AI to write code, it's generally a good practice to ask it to write comments as I've done above, so that you can verify if it's done what you want, and also to learn what these commands mean. 
+
+# Setup
+
+## Load packages
+
+This notebook uses packages from the `tidyverse` package for data manipulation and plotting. The `knitr` package is used to display the summary table.
+
+```{r setup, echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse) # Collection of packages for data manipulation and visualisation
+library(knitr) # Formats output in R Markdown documents (.Rmd files such as this)
+library(here) # Creates reliable file paths to project folders
+```
+
+This is the setup chunk, where we load the packages that will be used throughout the notebook.
+
+The options after `{r` control what appears in the final notebook:
+
+- `setup` is a name that I've given this chunk. 
+- `echo = TRUE` shows the code and the output. Setting it as `FALSE` doesn't show the code, and only the output.
+- `message = FALSE` hides informational messages that packages print when they are loaded (for example, messages about which functions are being attached). The packages are still loaded successfully.
+- `warning = FALSE` hides warning messages that might be produced while this chunk is running. Warnings indicate something you may want to check, but they are not necessarily errors.
+
+The `library()` function loads an R package so that its functions become available for use.
+
+Run this now. If you're prompted to install one or more of these packages, please do so. You'll only need to install them once, but you'll need to load them using the `library()` command each time you close R, or run a new script. 
+
+## Load the dataset
+
+
+```{r load-data, echo=TRUE}
+load(here("data/tesco.RData"))
+```
+
+```{r inspect-data, echo=TRUE}
+glimpse(tesco)
+```
+
+Inspect the structure of the dataset. `glimpse()` shows the number of rows, the number of columns, the variable names, and the type of each variable.
+
+You'll see two datatypes in this dataset, `<chr>`, which stands for character and `<dbl>` which stands for double. 
+
+- Character or the string type means that the values are treated as a text.
+- Double is a format which stores numbers up to a certain number of decimal places. 
+
+# 1. Can Tesco target specific age and occupation groups by locating branches strategically?
+
+If some locations have a high concentration of certain occupation or age groups, then perhaps Tesco could cater products specifically to such demographic groups in those locations. 
+
+The variables `f_student, f_occ_high, f_occ_middle, f_occ_low, f_age_18_64 and f_age_65plus` contain information for the fraction of the population that fall into each demographic group. If this number is high enough, that suggests an interesting lead. Starting the analysis by looking at `f_student` distribution across London:
+
+## Histogram
+
+```{r histogram-student, echo=TRUE}
+# Create a histogram of the fraction of students in each LSOA
+ggplot(tesco, aes(x = f_student)) +
+  # Draw the histogram using 30 bins and set the colours  
+  geom_histogram(
+    bins = 30,
+    fill = "skyblue",
+    colour = "black"
+  ) +
+  
+  # Add labels to the x- and y-axes  
+  labs(
+    x = "Fraction of students in each LSOA",
+    y = "Number of LSOAs with a given fraction"
+  ) +
+  
+  # Apply a simple, clean theme to the plot
+  theme_bw()
+```
+
+Most LSOAs have very few students. That is, students form only about 0-0.2 or 0-20% of the LSOA population (x-axis), and this appears to include almost all LSOAs, judging from the number of tall bars between 0-0.2. There seems to be one LSOA that has more than 60% of its residents as students --- but we can't be sure if that one data point could really inform us about how the typical student purchases food or drinks from Tesco!
+
+## Kernel density estimates
+
+A kernel density estimate helps us understand whether a variable may follow some of the well known distributions, such as a normal, uniform, exponential etc. 
+
+```{r density-student, echo=TRUE}
+# Create a kernel density estimate of the fraction of students in each LSOA
+ggplot(tesco, aes(x = f_student)) +
+
+  # Draw the density curve and fill the area underneath it
+  geom_density(
+    fill = "skyblue",
+    alpha = 0.4,
+    linewidth = 0.9,
+    na.rm = TRUE
+  ) +
+
+  # Add labels to the x- and y-axes
+  labs(
+    x = "Fraction of students in each LSOA",
+    y = "Density"
+  ) +
+
+  # Apply a simple, clean theme to the plot
+  theme_minimal()
+```
+
+When compared to histograms, the broad shapes are similar. 
+
+## Summary statistics
+
+
+```{r summary-student, echo=TRUE}
+# Display the default summary statistics for the fraction of students
+summary(tesco$f_student)
+```
+
+The average LSOA (the median) has 0.071 (7.1%) of its population as students. The average fraction of students in an LSOA is 0.079 (7.9%). So even though the distribution appears skewed, that's because of a very few number of outliers that don't seem to be influential in the calculation of the mean. If the outliers were influential, then there would be a meaningful difference between the mean and median. 
+
+## Making many similar plots
+
+Supposing you wanted to replicate the analysis so far with the `f_age` and `f_occ` variables, you might copy paste the same code above, changing the `x` variable each time. This is not wrong, but it would get tedious. 
+
+You could do it differently and efficiently as follows: 
+
+1. Write the code once to plot a generic variable. The code will be very similar to what's above.
+2. Give it an name so that you can refer to the whole code with one label.
+3. Make R execute this code by just calling this simple name. 
+
+Here's the function:
+
+```{r plotting-fn-summary, echo=TRUE}
+plot_distribution <- function(data, variable) {
+
+  # Create the histogram
+  histogram <- ggplot(data, aes(x = {{ variable }})) +
+    geom_histogram(
+      bins = 30,
+      fill = "skyblue",
+      colour = "black",
+      na.rm = TRUE
+    ) +
+    labs(
+      x = rlang::as_label(rlang::enquo(variable)),
+      y = "Count"
+    ) +
+    theme_minimal()
+
+  # Display the histogram
+  print(histogram)
+
+  # Create the kernel density estimate
+  density_plot <- ggplot(data, aes(x = {{ variable }})) +
+    geom_density(
+      fill = "skyblue",
+      alpha = 0.4,
+      linewidth = 0.9,
+      na.rm = TRUE
+    ) +
+    labs(
+      x = rlang::as_label(rlang::enquo(variable)),
+      y = "Density"
+    ) +
+    theme_minimal()
+
+  # Display the density plot
+  print(density_plot)
+
+  # Display the base R summary statistics
+  variable_values <- dplyr::pull(data, {{ variable }})
+  print(summary(variable_values))
+}
+```
+
+Notice now, in the Environment, you have a new entry called Functions with `plot_distribution`.
+
+Call this function. 
+
+```{r plot-batch-summaries-demo1, echo=TRUE}
+
+plot_distribution(tesco, f_age_18_64)
+
+```
+
+Working-age people comprise at least half (0.5 on the x-axis) of most of these LSOAs. This is not really helpful because age 18-64 forms a really wide age-group. 
+
+Perhaps some areas tend to have a high presence of people working in high-earning occupations than not?
+
+```{r plot-batch-summaries-demo2, echo=TRUE}
+
+plot_distribution(tesco, f_occ_high)
+
+```
+
+Interesting that there are some LSOAs with more than 70% of its population coming from a high-income group. This is not so surprising when you note that in many cities, those who are richer tend to live in different neighbourhoods compared to others.
+
+## Exercise
+
+Create histograms, kdensity and summary tables for the remaining demographic variables.
+
+# 2. How might the consumption of foods be correlated with the various occupation and age groups?
+
+The only variable that might be informative here is `f_occ_high` --- high income earners do tend to form high fractions of certain LSOAs.
+
+Do high income groups tend to consume some food more or less than others? As we increase the proportion of high income earners, do they consume more healthy food and less of unhealthy food? Let's consider sweets and, fruits and vegetables.
+
+## Scatter plot
+```{r scatterplot-sweets-occ-high, echo=TRUE}
+# Create a scatter plot showing the relationship between
+# the fraction of high-occupation residents and sweet consumption
+ggplot(tesco, aes(x = f_occ_high, y = f_sweets_weight)) +
+
+  # Plot one point for each LSOA
+  geom_point(
+    alpha = 0.1
+  ) +
+
+  # Add labels to the axes
+  labs(
+    x = "Fraction of high-income occupation residents",
+    y = "Fraction of purchases that's sweets"
+  ) +
+
+  # Apply a simple, clean theme
+  theme_minimal()
+```
+
+Each dot in this graph is an LSOA. 
+
+A pattern is visible in this scatterplot: as the area has more high-income residents, their sweets as a proportion of the goods they purchase decreases. This suggests that high-income individuals are likely to consume more healthy items. Let's test the corollary of this hypothesis by looking at fruits and vegetables. 
+
+
+```{r scatterplot-fruitveg-occ-high, echo=TRUE}
+# Create a scatter plot showing the relationship between
+# the fraction of high-occupation residents and sweet consumption
+ggplot(tesco, aes(x = f_occ_high, y = f_fruit_veg_weight)) +
+
+  # Plot one point for each LSOA
+  geom_point(
+    alpha = 0.1
+  ) +
+
+  # Add labels to the axes
+  labs(
+    x = "Fraction of high-occupation residents",
+    y = "Fraction of purchases that's fruit/veg"
+  ) +
+
+  # Apply a simple, clean theme
+  theme_minimal()
+```
+
+This is suggestive evidence that areas with more high income people do tend to purchase more healthy food, and less unhealthy food. Let's quantify what we see on this scatterplot using linear regression.
+
+
+## Scatter plot and simple linear regression
+
+As in Lecture 1, we first de-mean the `x` and `y` variables for a simple linear regression.
+
+```{r demean xy, echo=TRUE}
+# Create de-meaned versions of x and y
+tesco <- tesco |>
+  mutate(
+    f_occ_high_demeaned =
+      f_occ_high - mean(f_occ_high, na.rm = TRUE),
+
+    f_sweets_weight_demeaned =
+      f_sweets_weight - mean(f_sweets_weight, na.rm = TRUE),
+    
+    f_fruit_veg_weight_demeaned = 
+      f_fruit_veg_weight - mean(f_fruit_veg_weight, na.rm = TRUE)
+  )
+```
+
+
+Then we conduct the regression with `x` as the de-meaned version of `f_occ_high`, and `y` as the demeaned version of `f_sweets_weight` in the first regression and as `f_fruit_veg_weight` in the second. 
+
+```{r slr-sweets, echo=TRUE}
+# Run a simple linear regression with de-meaned fraction of sweet consumption in an area on the fraction of high-occupation residents
+model_sweets <- lm(
+  f_sweets_weight_demeaned ~ f_occ_high_demeaned,
+  data = tesco
+)
+
+# Display the regression results
+summary(model_sweets)
+
+```
+
+
+How might we interpret these? Focus only on the slope coefficient, which is the number that comes under the `Estimate` column and `f_occ_high_demeaned` row in the output table that says `Coefficients:`. `-5.066e-02` is the same as `0.05066`. The `e-02`, means `10^(-2)`. 
+
+When the proportion of high-income earners increases by 0.1 or 10 percentage points, the fraction of sweets consumed in the area of residence decreases by `0.1*(-0.0506) = -0.005` or `-0.005*100=-0.5` percentage points. So it's not 1:1 --- in areas with more high-income people, we observe that sweets consumption is lesser, but only modestly. 
+
+It is often convenient to include the regression result on a scatterplot. Here, we just plot the regression line, and label it with the slopes obtained from the regressions. 
+
+```{r slr-scatter-sweets, echo=TRUE}
+# Extract the estimated slope coefficient
+beta <- coef(model_sweets)[2]
+
+# Create a scatter plot with the fitted regression line
+ggplot(tesco,
+       aes(x = f_occ_high_demeaned,
+           y = f_sweets_weight_demeaned)) +
+
+  # Plot one point for each LSOA
+  geom_point(alpha = 0.1) +
+
+  # Add the least-squares regression line
+  geom_smooth(method = "lm", se = FALSE, colour = "red") +
+
+  # Add labels and the estimated coefficient
+  labs(
+    title = paste0("Estimated coefficient = ", round(beta, 3)),
+    x = "Fraction of high-occupation residents (de-meaned)",
+    y = "Fraction of consumption that's sweets (de-meaned)"
+  ) +
+
+  # Apply a simple, clean theme
+  theme_minimal()
+```
+
+
+Often, I also find it helpful to visualize how far away it is from a 1:1 relationship by plotting an imaginary 1:1 or a 1:-1 relationship on a graph. 
+
+```{r scatterplot-sweets-occ-high-regression, echo=TRUE}
+
+ggplot(
+  tesco,
+  aes(
+    x = f_occ_high_demeaned,
+    y = f_sweets_weight_demeaned
+  )
+) +
+  # Plot one point for each LSOA
+  geom_point(alpha = 0.1) +
+
+  # Add the estimated regression line
+  geom_smooth(
+    method = "lm",
+    se = FALSE,
+    colour = "red"
+  ) +
+  # Add the x-axis through the origin
+  geom_hline(
+    yintercept = 0,
+    colour = "grey40"
+  ) +
+
+  # Add the y-axis through the origin
+  geom_vline(
+    xintercept = 0,
+    colour = "grey40"
+  ) +
+  
+  # Add a hypothetical 1:-1 relationship
+  geom_abline(
+    intercept = 0,
+    slope = -1,
+    linetype = "dashed",
+    colour = "black"
+  ) +
+
+  labs(
+    title = paste0("Estimated coefficient = ", round(beta, 3)),
+    x = "Fraction of high-occupation residents (de-meaned)",
+    y = "Fraction of consumption that's sweets (de-meaned)"
+  ) +
+
+  theme_minimal()
+```
+
+This plot clarifies that areas with more high-income residents consumes fewer sweets, but only moderately less. 
+

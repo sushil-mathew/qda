@@ -7,15 +7,19 @@ date: "`r Sys.Date()`"
 
 # Load tidyverse, which includes the packages: ggplot2 (a package for plots) and
 # dplyr (a package for wrangling data)
+# Load the required R package.
 library(tidyverse)
 # load broom which is a package that prints tables neatly 
 # we'll use it to print regression tables
+# Load the required R package.
 library(broom)
 # load ggrepel, which is a package to print text on a graph neatly
 # we'll use it later when making scatterplots
+# Load the required R package.
 library(ggrepel)
 
 # Load data: the `../` bit means "go to the folder one level above the folder in which this script is saved"
+# Load the saved dataset.
 load("../data/jobs.RData")
 
 ```
@@ -28,165 +32,269 @@ $$Wage_i = \beta_0 + \beta_1 Education_i + \beta_2MediumIncome_i + \beta_3HighIn
 ```{r wage-educ-income-scatter-1}
 
 # Regression with common slope and different intercepts
+# Estimate a linear regression model 
 wage_educ_income_reg <- lm(
+  # specify wage as the outcome, and years of education as the first regressor
   median_wage_rate ~ avg_years_of_education +
+    # add dummies for medium and high income occupation as the second and third regressors
     medium_income_occ + high_income_occ,
+  # Specify the dataset used by this function.
   data = jobs
+# Close the function and continue the expression.
 )
 
+# Display the regression coefficients in a tidy table.
 tidy(wage_educ_income_reg)
 
 # Store coefficients
+# Extract the education regression coefficient.
 educ_slope <- coef(wage_educ_income_reg)["avg_years_of_education"]
 
+# Extract the low income group's average returns conditional on education.
 low_intercept <- coef(wage_educ_income_reg)["(Intercept)"]
 
+# Extract the medium income group's average returns conditional on education.
 medium_intercept <- coef(wage_educ_income_reg)["(Intercept)"] +
   coef(wage_educ_income_reg)["medium_income_occ"]
 
+# Extract the high income group's average returns conditional on education
 high_intercept <- coef(wage_educ_income_reg)["(Intercept)"] +
   coef(wage_educ_income_reg)["high_income_occ"]
 
 
 # Plot
+# Create a plot using the selected data and axes.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or coordinate.
                  y = median_wage_rate)) +
   
   # Scatter points
+  # Plot observations as scatterplot points for the low income group.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables or groups to plot aesthetics.
              aes(colour = "Low")) +
+  # Plot observations as scatterplot points for the medium income group.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables or groups to plot aesthetics.
              aes(colour = "Medium")) +
+  # Plot observations as scatterplot points for the high income group.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables or groups to plot aesthetics.
              aes(colour = "High")) +
   
   # Parallel fitted lines
+  # Draw the fitted line for the low income group.
   geom_abline(aes(intercept = low_intercept,
                   slope = educ_slope,
+                  # Assign the displayed colour group.
                   colour = "Low"),
+              # Set the line thickness.
               linewidth = 1) +
   
+  # Draw the fitted line for the medium income group.
   geom_abline(aes(intercept = medium_intercept,
                   slope = educ_slope,
+                  # Assign the displayed colour group.
                   colour = "Medium"),
+              # Set the line thickness.
               linewidth = 1) +
   
+  # Draw the fitted line for the high income group.
   geom_abline(aes(intercept = high_intercept,
                   slope = educ_slope,
+                  # Assign the displayed colour group.
                   colour = "High"),
+              # Set the line thickness.
               linewidth = 1) +
   
+  # Add descriptive plot labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or coordinate.
     x = "Average Years of Education",
+    # Set the vertical variable or coordinate.
     y = "Median Wage Rate",
+    # Assign the displayed colour group.
     colour = "Income Level"
+  # Close the function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
 
 In the figure drawn below, note the mean education, and mean wage for each of the 3 occupation groups in the dotted lines.
+
 ```{r wage-educ-inclines-scatter}
 # Group means
+# Calculate the mean wage for the low income group.
 low_mean_wage <- mean(
   jobs$median_wage_rate[jobs$low_income_occ == 1],
   na.rm = TRUE
+# Close the function and continue the expression.
 )
+# Calculate the mean education for the low group.
 low_mean_educ <- mean(
   jobs$avg_years_of_education[jobs$low_income_occ == 1],
   na.rm = TRUE
+# Close the function and continue the expression.
 )
 
+# Calculate the mean wage for the medium income group.
 medium_mean_wage <- mean(
   jobs$median_wage_rate[jobs$medium_income_occ == 1],
   na.rm = TRUE
+# Close the function and continue the expression.
 )
+# Calculate the mean education for the medium group.
 medium_mean_educ <- mean(
   jobs$avg_years_of_education[jobs$medium_income_occ == 1],
   na.rm = TRUE
+# Close the function and continue the expression.
 )
 
+# Calculate the mean wage for the high income group.
 high_mean_wage <- mean(
   jobs$median_wage_rate[jobs$high_income_occ == 1],
   na.rm = TRUE
+# Close the function and continue the expression.
 )
+# Calculate the mean educ for the high group.
 high_mean_educ <- mean(
   jobs$avg_years_of_education[jobs$high_income_occ == 1],
   na.rm = TRUE
+# Close the function and continue the expression.
 )
 
 
 # Plot
+# Create a plot using the selected data and axes.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or coordinate.
                  y = median_wage_rate)) +
   
   # Scatter points
+  # Plot observations as scatterplot points.
   geom_point(
+    # Select observations in the low income group.
     data = subset(jobs, low_income_occ == 1),
+    # Map variables or groups to plot aesthetics.
     aes(colour = "Low")
+  # Close the function and continue the expression.
   ) +
+  # Plot observations as scatterplot points.
   geom_point(
+    # Select observations in the medium income group.
     data = subset(jobs, medium_income_occ == 1),
+    # Map variables or groups to plot aesthetics.
     aes(colour = "Medium")
+  # Close the function and continue the expression.
   ) +
+  # Plot observations as scatterplot points.
   geom_point(
+    # Select observations in the high income group.
     data = subset(jobs, high_income_occ == 1),
+    # Map variables or groups to plot aesthetics.
     aes(colour = "High")
+  # Close the function and continue the expression.
   ) +
   
   # Mean education: vertical lines
+  # Draw a vertical line for the group mean education.
   geom_vline(
+    # Map variables or groups to plot aesthetics.
     aes(xintercept = low_mean_educ, colour = "Low"),
+    # Set the line pattern.
     linetype = "dashed",
+    # Set the line thickness.
     linewidth = 1,
+    # Set the transparency level.
     alpha = 0.4
+  # Close the function and continue the expression.
   ) +
+  # Draw a vertical line for the group mean education.
   geom_vline(
+    # Map variables or groups to plot aesthetics.
     aes(xintercept = medium_mean_educ, colour = "Medium"),
+    # Set the line pattern.
     linetype = "dashed",
+    # Set the line thickness.
     linewidth = 1,
+    # Set the transparency level.
     alpha = 0.4
+  # Close the function and continue the expression.
   ) +
+  # Draw a vertical line for the group mean education.
   geom_vline(
+    # Map variables or groups to plot aesthetics.
     aes(xintercept = high_mean_educ, colour = "High"),
+    # Set the line pattern.
     linetype = "dashed",
+    # Set the line thickness.
     linewidth = 1,
+    # Set the transparency level.
     alpha = 0.4
+  # Close the function and continue the expression.
   ) +
   
   # Mean wage: horizontal lines
+  # Draw a horizontal line for the group mean wage.
   geom_hline(
+    # Map variables or groups to plot aesthetics.
     aes(yintercept = low_mean_wage, colour = "Low"),
+    # Set the line pattern.
     linetype = "dashed",
+    # Set the line thickness.
     linewidth = 1,
+    # Set the transparency level.
     alpha = 0.4
+  # Close the function and continue the expression.
   ) +
+  # Draw a horizontal line for the group mean wage.
   geom_hline(
+    # Map variables or groups to plot aesthetics.
     aes(yintercept = medium_mean_wage, colour = "Medium"),
+    # Set the line pattern.
     linetype = "dashed",
+    # Set the line thickness.
     linewidth = 1,
+    # Set the transparency level.
     alpha = 0.4
+  # Close the function and continue the expression.
   ) +
+  # Draw a horizontal line for the group mean wage.
   geom_hline(
+    # Map variables or groups to plot aesthetics.
     aes(yintercept = high_mean_wage, colour = "High"),
+    # Set the line pattern.
     linetype = "dashed",
+    # Set the line thickness.
     linewidth = 1,
+    # Set the transparency level.
     alpha = 0.4
+  # Close the function and continue the expression.
   ) +
   
+  # Add descriptive plot labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or coordinate.
     x = "Average Years of Education",
+    # Set the vertical variable or coordinate.
     y = "Median Wage Rate",
+    # Assign the displayed colour group.
     colour = "Income Level"
+  # Close the function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
 We are going to now show that the interpreting the relationship between education and wage given by $\beta_1$ in the equation below, has a similar logic as the de-meaning step simple linear regression model from Lecture 1 and Tutorial 2. 
 
-$$Wage_i = \beta_0 + \beta_1 Education_i + \beta_2MediumIncome_i + \beta_3HighIncome_i + \varepsilon_i.$$
+$$Wage_i = \beta_0 + \beta_1 Education_i + \beta_2 MediumIncome_i + \beta_3 HighIncome_i + \varepsilon_i.$$
 
 The only difference here is that we do this now for each income group separately.
 
@@ -199,63 +307,103 @@ After de-meaning, we plot the scatterplot of the wage and education groups with 
 ```{r residual-regressions}
 
 # (1) Regress wage rate on the three income-level dummies
+# Estimate a linear regression model.
 reg_wage <- lm(
+  # Specify the regression relationship.
   median_wage_rate ~ low_income_occ + medium_income_occ + high_income_occ - 1,
+  # Specify the dataset used by this function.
   data = jobs
+# Close the function and continue the expression.
 )
 
 # (2) Regress education on the three income-level dummies
+# Estimate a linear regression model.
 reg_education <- lm(
+  # Specify the regression relationship.
   avg_years_of_education ~ low_income_occ + medium_income_occ + high_income_occ - 1,
+  # Specify the dataset used by this function.
   data = jobs
+# Close the function and continue the expression.
 )
 
 # Store residuals as new columns
+# Store residuals from the fitted regression.
 jobs$wage_residual <- residuals(reg_wage)
+# Store residuals from the fitted regression.
 jobs$education_residual <- residuals(reg_education)
 
 
 # Plot residualised wage against residualised education
+# Create a plot using the selected data and axes.
 ggplot(jobs, aes(x = education_residual,
+                 # Set the vertical variable or coordinate.
                  y = wage_residual)) +
   
+  # Plot observations as scatterplot points for the low income group.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables or groups to plot aesthetics.
              aes(colour = "Low")) +
   
+  # Plot observations as scatterplot points for the medium income group.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables or groups to plot aesthetics.
              aes(colour = "Medium")) +
   
+  # Plot observations as scatterplot points for the high income group.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables or groups to plot aesthetics.
              aes(colour = "High")) +
   
   # Linear fit with 95% confidence interval
+  # Fit a regression line with the specified settings.
   geom_smooth(
+    # Choose the regression fitting method.
     method = "lm",
+    # Specify the regression relationship.
     formula = y ~ x,
+    # Configure the confidence interval display.
     se = TRUE,
+    # Assign the displayed colour group.
     colour = "black",
+    # Set the transparency level.
     alpha = 0.6
+  # Close the function and continue the expression.
   ) +
   
+  # Configure the plot scale.
   scale_x_continuous(
+    # Specify axis tick positions.
     breaks = scales::breaks_pretty(n = 6)
+  # Close the function and continue the expression.
   ) +
   
+  # Configure the plot scale.
   scale_y_continuous(
+    # Specify axis tick positions.
     breaks = scales::breaks_pretty(n = 6)
+  # Close the function and continue the expression.
   ) +
   
+  # Add descriptive plot labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education",
+    # Set the plot title.
     subtitle = "Controlling for Income Level",
+    # Set the horizontal variable or coordinate.
     x = "Average Years of Education (after accounting for income level)",
+    # Set the vertical variable or coordinate.
     y = "Median Wage Rate (after accounting for income level)",
+    # Assign the displayed colour group.
     colour = "Income Level"
+  # Close the function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 
 ```
+
 We wanted to show that the slope of this regression where wage and education are de-meaned by the group averages are the exact same as $\beta_1$ from the regression: 
 $$Wage_i = \beta_0 + \beta_1 Education_i + \beta_2MediumIncome_i + \beta_3HighIncome_i + \varepsilon_i.$$
 
@@ -263,15 +411,22 @@ Let's run the 2 regressions and compare the coefficient for the education and ed
 
 ```{r verify-2-regressions}
 
+# Estimate a linear regression model.
 model1 <- lm(wage_residual ~ education_residual, data = jobs)
+# Display the regression coefficients in a tidy table.
 tidy(model1)
 
+# Estimate a linear regression model.
 model2 <- lm(
+  # Specify the regression relationship.
   median_wage_rate ~ avg_years_of_education +
     medium_income_occ + high_income_occ,
+  # Specify the dataset used by this function.
   data = jobs
+# Close the function and continue the expression.
 )
 
+# Display the regression coefficients in a tidy table.
 tidy(model2)
 ```
 
@@ -285,29 +440,42 @@ This interpretation will become useful when you come to Panel data and Differenc
 ## Tutorial 5, 1.5: Choosing a model
 
 First we select the training sample
+
 ```{r select-train-sample}
 
 # Set seed so the same sample is drawn each time
+# Set the random seed for reproducibility.
 set.seed(123)
 
 # Draw 300 SOC codes, excluding 2211 and 2212
+# Assign the computed result to a variable.
 sample_soc_codes <- jobs %>%
+  # Keep observations satisfying the condition.
   filter(!soc_code %in% c(2211, 2212)) %>%
+  # Keep unique occupation codes.
   distinct(soc_code) %>%
+  # Draw a random sample of observations.
   slice_sample(n = 300) %>%
+  # Extract the selected column as a vector.
   pull(soc_code)
 
 # Create estimation sample
+# Assign the computed result to a variable.
 estimation_sample <- jobs %>%
+  # Keep observations satisfying the condition.
   filter(soc_code %in% sample_soc_codes)
 ```
 
 Then we select the test sample
 ```{r select-holdout-sample}
 # Create holdout sample
+# Assign the computed result to a variable.
 holdout_sample <- jobs %>%
+  # Keep observations satisfying the condition.
   filter(
+    # Don't choose soc codes that are in the training sample soc's
     !soc_code %in% sample_soc_codes
+  # Close the function and continue the expression.
   )
 
 ```
@@ -316,32 +484,39 @@ holdout_sample <- jobs %>%
 Here's a model that I'm going to use for OLS. This code will give you an error. You have to make exactly 1 modification to make the code run. Modify and run the code:
 ```{r ols-train}
 # Estimate pre-defined model by running an ols regression
+# Assign the computed result to a variable.
 ols_train_model <- (
+  # Specify the regression relationship.
   median_wage_rate ~ avg_years_of_education +
     medium_income_occ + high_income_occ +
     weighted_skill_score +
     number_of_transferable_skills +
     years_of_experience +
+    # Include a squared predictor in the regression.
     I(years_of_experience^2),
+  # Specify the dataset used by this function.
   data = estimation_sample
+# Close the function and continue the expression.
 )
 
 # Regression results
+# Display the regression coefficients in a tidy table.
 tidy(ols_train_model)
 
 ```
 
+You have to add the `lm()` command above as `ols_train_model <- lm(median_wage_rate ~ ...`.
 
 Here, I'm going to train a LASSO model. The details of this code is not important to you. The only thing you need to know is what the model is taking as input. Look at the `select()` function in `x_train`, and then look at `y_train`. What variables have I asked the model to choose from? Have I omitted some variables?
 
 ```{r lasso-train}
-
-# uncomment the line below (by removing the #) to install glmnet -- a package to run lasso -- if you don't have glmnet installed already
-#install.packages("glmnet")
+# Load the required R package.
 library(glmnet)
 
 # Create predictor matrix using training sample
+# Assign the computed result to a variable.
 x_train <- estimation_sample %>%
+  # Exclude the specified variables using the - sign.
   select(
     -median_wage_rate,
     -soc_code,
@@ -349,34 +524,50 @@ x_train <- estimation_sample %>%
     -median_hours_worked,
     -wage_residual,
     -education_residual
+  # Close the function and continue the expression.
   ) %>%
+  # Convert predictors into a numeric model matrix.
   model.matrix(~ . - 1, data = .)
 
 # Outcome
+# Assign the computed result to a variable.
 y_train <- estimation_sample$median_wage_rate
 
 # Cross-validated LASSO
+# Set the random seed for reproducibility.
 set.seed(123)
 
+# Train a cross-validated LASSO model.
 lasso_cv <- cv.glmnet(
+  # Set the horizontal variable or coordinate.
   x = x_train,
+  # Set the vertical variable or coordinate.
   y = y_train,
+  # Set the transparency level.
   alpha = 1
+# Close the function and continue the expression.
 )
 
 # Extract coefficients at the optimal lambda
+# Extract the specified regression coefficient.
 lasso_coefs <- coef(lasso_cv, s = "lambda.min")
 
 # Keep only variables selected by LASSO
+# Assign the computed result to a variable.
 selected_model <- data.frame(
   variable = rownames(lasso_coefs),
   coefficient = as.numeric(lasso_coefs)
+# Close the function and continue the expression.
 ) %>%
+  # Keep observations satisfying the condition.
   filter(coefficient != 0)
 
 # Print selected model
+# Display the selected results.
 print(selected_model)
 ```
+
+I've asked LASSO to not select the outcome variable, as the outcome variable would be the best predictor of itself! The `soc` code and description would again be the best predictor, as each line is a different job, and each job of course, has its own wages. I've removed the wage and education residual, as this basically "embeds" the OLS model --- we don't want the LASSO model to artificially select the OLS model, yet. I've not selected wages because of a more nuanced problem called "endogeneity" which some of you may have encountered. It is beyond the scope of this module, but if you're interested, I'm happy to chat!
 
 ## Tutorial 5, 1.6: Out-of-sample predictions
 
@@ -386,56 +577,95 @@ The code below is supposed to make a scatterplot, but it won't work. You'll have
 
 ```{r ols-test}
 # Generate predictions using the model estimated on the training sample
+# Assign the computed result to a variable.
 holdout_sample <- holdout_sample %>%
+  # Create or update dataset variables.
   mutate(
+    # Generate predictions from the trained model.
     ols_predicted_wage = predict(
+      # use the ols model we've saved before
       ols_train_model,
+      # Specify the holdout sample to predict over
       newdata = holdout_sample
+    # Close the function and continue the expression.
     )
+  # Close the function and continue the expression.
   )
 
 # Plot predicted against true wage
+# Create a plot using the selected data and axes.
 ggplot(
   holdout_sample,
+  # Map variables or groups to plot aesthetics.
   aes(
+    # Set the horizontal variable or coordinate.
     x = ols_predicted_wage,
+    # Set the vertical variable or coordinate.
     y = median_wage_rate
+  # Close the function and continue the expression.
   )
+# Close the function and continue the expression.
 ) +
+  # Set the transparency level.
   geom_(alpha = 0.7, size = 2.5) +
   
   
+  # Label selected occupations on the plot.
   geom_text_repel(
+    # Select observations matching the specified condition.
     data = subset(holdout_sample, soc_code %in% c(2211, 2212)),
+    # Map variables or groups to plot aesthetics.
     aes(label = soc_description),
+    # Set the point or label size.
     size = 4,
     max.overlaps = Inf
+  # Close the function and continue the expression.
   ) +
   
   # 45-degree line: perfect prediction
+  # Draw the fitted line for the Draw a reference line.
   geom_abline(
+    # Provide the next argument or predictor.
     intercept = 0,
+    # Provide the next argument or predictor.
     slope = 1,
+    # Set the line pattern.
     linetype = "dashed"
+  # Close the function and continue the expression.
   ) +
   
+  # Add descriptive plot labels.
   labs(
+    # Set the plot title.
     title = "True Wage Rate vs OLS Predicted Wage Rate",
+    # Set the plot title.
     subtitle = "Holdout Sample",
+    # Set the horizontal variable or coordinate.
     x = "OLS Predicted Median Wage Rate",
+    # Set the vertical variable or coordinate.
     y = "True Median Wage Rate"
+  # Close the function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
+The issue is in `geom_(alpha = 0.7, size = 2.5)`, which is supposed to be `geom_point(alpha = 0.7, size = 2.5)`.
+
 How well did the OLS model perform? How did it perform specifically for the average worker in the 2 job categories for doctors?
+
+The dotted line is not the line of best fit. It's a line for when y = x. Here x is the OLS predicted wage for observations outside the training sample, and y is the true wage for the same observations outside the training sample (the test sample). If most points lied exactly on this line, it would suggest that the chosen OLS model is a remarkable predictor for wages. Most of the points are fairly close to the line, so it seems that the OLS model doesn't do so badly, except for the points in the top right corner. That might mean two things: (1) either the model is generally good for lower wages, and not so good at predicting higher wages; (2) the model is good at predicting wages, it just might be that these professions are getting "overpaid" according to your chosen "reward structure" which rewards skills, education, and experience (the OLS model).
+
+For now, we don't take a stand on (1) or (2) but it is important to state both, clearly.
 
 The below code will work, try it.
 
 ```{r lasso-test}
 # Create predictor matrix for holdout sample
+# Assign the computed result to a variable.
 x_holdout <- holdout_sample %>%
+  # Exclude the specified variables.
   select(
     -median_wage_rate,
     -soc_code,
@@ -444,19 +674,28 @@ x_holdout <- holdout_sample %>%
     -wage_residual,
     -education_residual,
     -ols_predicted_wage
+  # Close the function and continue the expression.
   ) %>%
+  # Convert predictors into a numeric model matrix.
   model.matrix(~ . - 1, data = .)
 
 # Match training columns and their order
+# Assign the computed result to a variable.
 x_holdout <- x_holdout[, colnames(x_train), drop = FALSE]
 
 # Generate LASSO predictions
+# Assign the computed result to a variable.
 holdout_sample <- holdout_sample %>%
+  # Create or update dataset variables.
   mutate(
     lasso_predicted_wage = as.numeric(
+      # Generate predictions from the trained model.
       predict(
+        # USE Lasso cross-validated model
         lasso_cv,
+        # Set the horizontal variable or coordinate.
         newx = x_holdout,
+        # use the best lasso model amongst the ones available
         s = "lambda.min"
       )
     )
@@ -464,84 +703,141 @@ holdout_sample <- holdout_sample %>%
 
 
 # Plot predicted against actual wage with lasso predictions
+# Create a plot using the selected data and axes.
 ggplot(
   holdout_sample,
+  # Map variables or groups to plot aesthetics.
   aes(
+    # Set the horizontal variable or coordinate.
     x = lasso_predicted_wage,
+    # Set the vertical variable or coordinate.
     y = median_wage_rate
+  # Close the function and continue the expression.
   )
+# Close the function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point(alpha = 0.7, size = 2.5) +
   
   # Label SOC codes 2211 and 2212
+  # Label selected occupations on the plot.
   geom_text_repel(
+    # Select observations matching the specified condition.
     data = subset(holdout_sample, soc_code %in% c(2211, 2212)),
+    # Map variables or groups to plot aesthetics.
     aes(label = soc_description),
+    # Set the point or label size.
     size = 4
+  # Close the function and continue the expression.
   ) +
   
   # 45-degree line: perfect prediction
+  # Draw the fitted line for the Draw a reference line.
   geom_abline(
+    # Provide the next argument or predictor.
     intercept = 0,
+    # Provide the next argument or predictor.
     slope = 1,
+    # Set the line pattern.
     linetype = "dashed",
+    # Assign the displayed colour group.
     colour = "grey40"
+  # Close the function and continue the expression.
   ) +
   
+  # Add descriptive plot labels.
   labs(
+    # Set the plot title.
     title = "True Wage Rate vs LASSO Predicted",
+    # Set the plot title.
     subtitle = "Holdout Sample with SOC 2211 and 2212 Labelled",
+    # Set the horizontal variable or coordinate.
     x = "LASSO Predicted Median Wage Rate",
+    # Set the vertical variable or coordinate.
     y = "True Median Wage Rate"
+  # Close the function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
 How well did the LASSO model perform? How did it perform specifically for the average worker in the 2 job categories for doctors?
 
+Similar answer as the OLS model. 
 
 The $R^2$ can be (but doesn't need to be) a measure of model performance. A value closer to 1 is generally seen as being better. For reasons (unfortunately, because I would love to go on about it) beyond the scope of this module, the $R^2$ below is actually pretty good for this case study.
 
 ```{r}
+# Estimate a linear regression model.
 summary(lm(median_wage_rate ~ lasso_predicted_wage, data = holdout_sample))$r.squared
+# Estimate a linear regression model.
 summary(lm(median_wage_rate ~ ols_predicted_wage, data = holdout_sample))$r.squared
 ```
 
 We can also compare OLS and LASSO predictions. Based on the analysis so far, which model would you select and why?
+
 ```{r}
 # Compare OLS and LASSO predictions
+# Create a plot using the selected data and axes.
 ggplot(
   holdout_sample,
+  # Map variables or groups to plot aesthetics.
   aes(
+    # Set the horizontal variable or coordinate.
     x = ols_predicted_wage,
+    # Set the vertical variable or coordinate.
     y = lasso_predicted_wage
+  # Close the function and continue the expression.
   )
+# Close the function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point(alpha = 0.7, size = 2.5) +
   
   # Label SOC codes 2211 and 2212
+  # Label selected occupations on the plot.
   geom_text_repel(
+    # Select observations matching the specified condition.
     data = subset(holdout_sample, soc_code %in% c(2211, 2212)),
+    # Map variables or groups to plot aesthetics.
     aes(label = soc_description),
+    # Set the point or label size.
     size = 4
+  # Close the function and continue the expression.
   ) +
   
   # 45-degree line: models make same prediction
+  # Draw the fitted line for the Draw a reference line.
   geom_abline(
+    # Provide the next argument or predictor.
     intercept = 0,
+    # Provide the next argument or predictor.
     slope = 1,
+    # Set the line pattern.
     linetype = "dashed",
+    # Assign the displayed colour group.
     colour = "grey40"
+  # Close the function and continue the expression.
   ) +
   
+  # Add descriptive plot labels.
   labs(
+    # Set the plot title.
     title = "OLS vs LASSO Wage Predictions",
+    # Set the plot title.
     subtitle = "Holdout Sample with SOC 2211 and 2212 Labelled",
+    # Set the horizontal variable or coordinate.
     x = "OLS Predicted Median Wage Rate",
+    # Set the vertical variable or coordinate.
     y = "LASSO Predicted Median Wage Rate"
+  # Close the function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
+It seems that OLS and LASSO fits are both quite close to each other, even for the outlier cases. Given that the OLS model is more interpretable (wages are dependent on skills, education and experience), it's probably better to go with that. If the LASSO's performance was incredibly better than OLS's then we might go with that, even though it's not very interpretable. Though, usually human stakeholders are hesitant to use models that are not so interpretable.
+
+As a somewhat light aside, choosing the right model between OLS and LASSO is a bit like choosing between the style of Hercule Poirot and Sherlock Holmes. In the Sherlock Holmes stories, he usually infers patterns from crime scenes, and relates them to his previous experience with the objects such as tobacco ash and bootprints that he's studied before --- this is a bit like what LASSO does. Hercule Poirot (and also Miss Marple, another Agatha Christie character) generally tends to work out the theory of the murder first (motives, psychology) rather than stray objects, and sees which observations line up with the theory --- this is what we did with the OLS model. Both detectives and estimation approaches are successful, LASSO tends to be especially useful if theory is poorly developed, and an OLS model is better suited to situations where the theory is slightly more mature, or in situations where even an imperfect theory makes people more comfortable than having no theory at all. Indeed, in the Sherlock Holmes stories, people are vastly more uncomfortable with his methods, which seems to have less to do with the crime itself --- a similar argument given by people who don't prefer the "blackbox-y" Machine Learning methods. Poirot is also unlikeable but that's usually because he's not very transparent about his process until the very end. 

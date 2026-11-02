@@ -22,63 +22,106 @@ load("../data/jobs.RData")
 
 ```
 
-What's the unit of analysis?
+What's the unit of analysis? 
+It's the average worker in a job classification. There are 392 job classifications in this dataset.
 
 ## 1.1 How years of experience predicts the wage rate 
 
 Let's make a scatterplot with the wage rate on the vertical and years of experience on the horizontal axes.
 
 ```{r wage-experience-scatter}
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = years_of_experience, y = median_wage_rate)) +
+  # Plot observations as scatterplot points.
   geom_point(alpha = 0.3, size = 2) +
   
   # Linear fit
+  # Add a fitted regression curve.
   geom_smooth(
+    # Map variables to plot aesthetics.
     aes(colour = "Linear", linetype = "Linear"),
+    # Fit the curve using linear regression.
     method = "lm", 
+    # Specify the linear form of the fitted curve.
     formula = y ~ x, 
+    # Set whether to display the confidence band.
     se = FALSE
+  # Close this function and continue the expression.
   ) +
   
   # Quadratic fit
+  # Add a fitted regression curve.
   geom_smooth(
+    # Map variables to plot aesthetics.
     aes(colour = "Quadratic", linetype = "Quadratic"),
+    # Fit the curve using linear regression.
     method = "lm", 
+    # Specify the quadratic form of the fitted curve.
     formula = y ~ x + I(x^2), 
+    # Set whether to display the confidence band.
     se = FALSE
+  # Close this function and continue the expression.
   ) +
  
   # Cubic fit
+  # Add a fitted regression curve.
   geom_smooth(
+    # Map variables to plot aesthetics.
     aes(colour = "Cubic", linetype = "Cubic"),
+    # Fit the curve using linear regression.
     method = "lm",
+    # Specify the cubic form of the fitted curve.
     formula = y ~ x + I(x^2) + I(x^3),
+    # Set whether to display the confidence band.
     se = FALSE
+  # Close this function and continue the expression.
   ) + 
   
+  # Set colours for the model categories.
   scale_colour_manual(
+    # Name the model legend.
     name = "Model",
+    # Define the visual settings for each category.
     values = c(
+      # Assign the specified colour or line style to this category.
       "Linear" = "blue",
+      # Assign the specified colour or line style to this category.
       "Quadratic" = "black",
+      # Assign the specified colour or line style to this category.
       "Cubic" = "red"
+    # Close the current function call.
     )
+  # Close this function and continue the expression.
   ) +
   
+  # Set line styles for the model categories.
   scale_linetype_manual(
+    # Name the model legend.
     name = "Model",
+    # Define the visual settings for each category.
     values = c(
+      # Assign the specified colour or line style to this category.
       "Linear" = "dotted",
+      # Assign the specified colour or line style to this category.
       "Quadratic" = "solid",
+      # Assign the specified colour or line style to this category.
       "Cubic" = "dashed"
+    # Close the current function call.
     )
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Years of Experience",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Experience",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -88,74 +131,129 @@ I sometimes find it helpful to label a few dots to get a general "feel" for what
 
 ```{r wage-experience-labelled}
 
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = years_of_experience, y = median_wage_rate)) +
   
   # Scatterplot
+  # Plot observations as scatterplot points.
   geom_point(alpha = 0.3, size = 2) +
   
   # Labels for selected occupations
+  # Label selected points while reducing label overlap.
   geom_text_repel(
+    # Use the specified dataset for this layer or model.
     data = subset(
+      # Use the jobs dataset.
       jobs,
+      # if either years of experience greater than 45
       years_of_experience > 45 |
+      # or median wage rate > 60
       median_wage_rate > 60 |
+      # or years of experience < 15
       years_of_experience < 15
+    # Close this function and continue the expression.
     ),
+    # Map variables to plot aesthetics.
     aes(label = soc_description),
+    # Set the size of points or labels.
     size = 3,
+    # Allow labels for all selected observations.
     max.overlaps = Inf
+  # Close this function and continue the expression.
   ) +
   
    # Linear fit
+  # Add a fitted regression curve.
   geom_smooth(
+    # Map variables to plot aesthetics.
     aes(colour = "Linear", linetype = "Linear"),
+    # Fit the curve using linear regression.
     method = "lm", 
+    # Specify the polynomial form of the fitted curve.
     formula = y ~ x, 
+    # Set whether to display the confidence band.
     se = FALSE
+  # Close this function and continue the expression.
   ) +
   
   # Quadratic fit
+  # Add a fitted regression curve.
   geom_smooth(
+    # Map variables to plot aesthetics.
     aes(colour = "Quadratic", linetype = "Quadratic"),
+    # Fit the curve using linear regression.
     method = "lm", 
+    # Specify the polynomial form of the fitted curve.
     formula = y ~ x + I(x^2), 
+    # Set whether to display the confidence band.
     se = FALSE
+  # Close this function and continue the expression.
   ) +
  
   # Cubic fit
+  # Add a fitted regression curve.
   geom_smooth(
+    # Map variables to plot aesthetics.
     aes(colour = "Cubic", linetype = "Cubic"),
+    # Fit the curve using linear regression.
     method = "lm",
+    # Specify the polynomial form of the fitted curve.
     formula = y ~ x + I(x^2) + I(x^3),
+    # Set whether to display the confidence band.
     se = FALSE
+  # Close this function and continue the expression.
   ) + 
   
+  # Set colours for the model categories.
   scale_colour_manual(
+    # Name the model legend.
     name = "Model",
+    # Define the visual settings for each category.
     values = c(
+      # Assign the specified colour or line style to this category.
       "Linear" = "blue",
+      # Assign the specified colour or line style to this category.
       "Quadratic" = "black",
+      # Assign the specified colour or line style to this category.
       "Cubic" = "red"
+    # Close the current function call.
     )
+  # Close this function and continue the expression.
   ) +
   
+  # Set line styles for the model categories.
   scale_linetype_manual(
+    # Name the model legend.
     name = "Model",
+    # Define the visual settings for each category.
     values = c(
+      # Assign the specified colour or line style to this category.
       "Linear" = "dotted",
+      # Assign the specified colour or line style to this category.
       "Quadratic" = "solid",
+      # Assign the specified colour or line style to this category.
       "Cubic" = "dashed"
+    # Close the current function call.
     )
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Years of Experience",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Experience",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate"
+  # Close this function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
+
+The linear curve definitely does not capture the reality that wages grow with experience, so we eliminate that. Both the quadratic and cubic curves peaks with around 30 years of experience. The real difference between the cubic and quadratic seems to be that the cubic is more "accurate" at describing about 6 data points with really low or really high years of experience, and that too, not by much. So we go with a model that's simpler to explain -- the quadratic -- since it describes a trajectory where wages peaks with experience, and may drop as the workers age (which is generally a true fact about wage growth). That being said, it wouldn't be wrong to go with the cubic fit.
 
 ## 1.2 Visualizing dummy variables as regressors
 
@@ -163,13 +261,21 @@ ggplot(jobs, aes(x = years_of_experience, y = median_wage_rate)) +
 Before we visualize dummy variables as regressors, let's make a simple plot comparing wage rate to years of education.
 
 ```{r wage-education-scatter}
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = avg_years_of_education, y = median_wage_rate)) +
+  # Plot observations as scatterplot points.
   geom_point() +
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -177,16 +283,27 @@ There are 3 income groups for a given occupation --- high, medium and low. Each 
 
 ```{r example-income-groups-display}
 
+# Pass the jobs dataset into the next operation.
 jobs %>%
+  # Select the requested columns.
   select(
+    # Include occupation descriptions in the output.
     soc_description,
+    # Include median wage rates in the output.
     median_wage_rate,
+    # Include this income-group indicator.
     high_income_occ,
+    # Include this income-group indicator.
     medium_income_occ,
+    # Include this income-group indicator.
     low_income_occ
+  # Close this function and continue the expression.
   ) %>%
+  # Group observations by income indicators.
   group_by(high_income_occ, medium_income_occ, low_income_occ) %>%
+  # Keep the first three observations per group.
   slice_head(n = 3) %>%
+  # Remove grouping from the dataset.
   ungroup()
 
 ```
@@ -196,20 +313,35 @@ Now repeat the wage-education scatterplot, colouring the points differently by t
 
 
 ```{r wage-educ-category-scatterplot}
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or axis label.
                  y = median_wage_rate)) +
+  # Plot observations as scatterplot points for the low income group
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
+  # Plot observations as scatterplot points for the medium income group
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
+  # Plot observations as scatterplot points for the high income group
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -218,32 +350,53 @@ Fit a line through all the points.
 
 
 ```{r wage-educ-category-single-fit}
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or axis label.
                  y = median_wage_rate)) +
   
   # Points coloured by income group
+  # Plot observations as scatterplot points for low income
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
+  # Plot observations as scatterplot points for medium income
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
+  # Plot observations as scatterplot points for high income
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
   
   # One fitted line through all observations
+  # Add a fitted regression curve.
   geom_smooth(
+    # Fit the curve using linear regression.
     method = "lm",
+    # Specify linear form
     formula = y ~ x,
+    # Set whether to display the confidence band.
     se = FALSE,
+    # Set the colour of the plotted element.
     colour = "black"
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -255,28 +408,40 @@ To do so, start with the regression below. Why did we leave out the low income o
 
 ```{r wage-educ-income-reg}
 # Regression with common slope and different intercepts
+# Fit a linear regression with the specified predictors.
 wage_educ_income_reg <- lm(
+  # Model median wage as a function of the listed predictors.
   median_wage_rate ~ avg_years_of_education +
+    # Control for these income-group indicators.
     medium_income_occ + high_income_occ,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
 
+# Display regression coefficients in a tidy table.
 tidy(wage_educ_income_reg)
 ```
-
+We left out the low income group, because the intercept captures the low income workers' average wage relative to the average worker in this dataset. One way to verify this is by setting the dummy for medium and high income occupation to 0 -- if both of those are 0, then the low income group's dummy has to be 1, and you have to be describing a low income worker.
 
 Extract the slopes
 
 ```{r wage-educ-and-income-slopes}
 # Store coefficients
+# Extract the specified regression coefficient.
 educ_slope <- coef(wage_educ_income_reg)["avg_years_of_education"]
 
+# Extract the specified regression coefficient.
 low_intercept <- coef(wage_educ_income_reg)["(Intercept)"]
 
+# Extract the specified regression coefficient.
 medium_intercept <- coef(wage_educ_income_reg)["(Intercept)"] +
+  # Specify this argument or predictor in the current calculation.
   coef(wage_educ_income_reg)["medium_income_occ"]
 
+# Extract the specified regression coefficient.
 high_intercept <- coef(wage_educ_income_reg)["(Intercept)"] +
+  # Specify this argument or predictor in the current calculation.
   coef(wage_educ_income_reg)["high_income_occ"]
 ```
 
@@ -286,39 +451,66 @@ Plot scatter with a separate line fit for each income group
 
 ```{r wage-educ-income-scatter-1}
 # Plot
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or axis label.
                  y = median_wage_rate)) +
   
   # Scatter points
+  # Plot observations as scatterplot points for the low income group
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
+  # Plot observations as scatterplot points for the medium income group
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
+  # Plot observations as scatterplot points for the high income group
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
   
   # Parallel fitted lines
+  # Draw a fitted line using its intercept and slope.
   geom_abline(aes(intercept = low_intercept,
+                  # Use the estimated education slope for this line.
                   slope = educ_slope,
+                  # Set the colour of the plotted element.
                   colour = "Low"),
+              # Set the width of the plotted line.
               linewidth = 1) +
   
+  # Draw a fitted line using its intercept and slope.
   geom_abline(aes(intercept = medium_intercept,
+                  # Use the estimated education slope for this line.
                   slope = educ_slope,
+                  # Set the colour of the plotted element.
                   colour = "Medium"),
+              # Set the width of the plotted line.
               linewidth = 1) +
   
+  # Draw a fitted line using its intercept and slope.
   geom_abline(aes(intercept = high_intercept,
+                  # Use the estimated education slope for this line.
                   slope = educ_slope,
+                  # Set the colour of the plotted element.
                   colour = "High"),
+              # Set the width of the plotted line.
               linewidth = 1) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -326,49 +518,79 @@ This model predicts that high income earners wages are greater than middle incom
 But given their income group, an additional year of education predicts the same increase in wages, on average.
 
 Which line fit feels more honest? The one with 3 lines, or with one line? Why?
-
+The 3 line version seems to be better, as it captures the fact that ones' industry gives them some kind of a wage difference independent of their education.
 
 Now we fit 3 lines, but allow the slopes to vary for each income group.
 
 
 ```{r wage-educ-by-income-scatter}
 
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or axis label.
                  y = median_wage_rate)) +
   
   # Low income
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
+  # Add a fitted regression curve.
   geom_smooth(data = subset(jobs, low_income_occ == 1),
+              # Map variables to plot aesthetics.
               aes(colour = "Low"),
+              # Fit the curve using linear regression.
               method = "lm",
+              # Specify the polynomial form of the fitted curve.
               formula = y ~ x,
+              # Set whether to display the confidence band.
               se = FALSE) +
   
   # Medium income
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
+  # Add a fitted regression curve.
   geom_smooth(data = subset(jobs, medium_income_occ == 1),
+              # Map variables to plot aesthetics.
               aes(colour = "Medium"),
+              # Fit the curve using linear regression.
               method = "lm",
+              # Specify the polynomial form of the fitted curve.
               formula = y ~ x,
+              # Set whether to display the confidence band.
               se = FALSE) +
   
   # High income
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
+  # Add a fitted regression curve.
   geom_smooth(data = subset(jobs, high_income_occ == 1),
+              # Map variables to plot aesthetics.
               aes(colour = "High"),
+              # Fit the curve using linear regression.
               method = "lm",
+              # Specify the polynomial form of the fitted curve.
               formula = y ~ x,
+              # Set whether to display the confidence band.
               se = FALSE) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 
 ```
@@ -376,8 +598,14 @@ ggplot(jobs, aes(x = avg_years_of_education,
 This model predicts that each additional year of education gives on average, a larger rise of wages for high income earners, compared to medium income earners; and similarly, a larger rise in wages for medium income earners compared to low income earners.
 
 Write the model for each plot. Do you see that each model excludes predictors that the next model includes?
+$$wage_i = \beta_0 + \beta_1 Education_i + \varepsilon_i$$
+$$wage_i = \beta_0 + \beta_1 Education_i + \beta_2 M_i + \beta_3 H + \nu_i$$
+$$wage_i = \beta_0 + \beta_1 Education_i + \beta_2 M_i + \beta_3 H + \beta_4 Education_i*M_i + \beta_5 Education_i*H_i+ \mu_i$$
+
 
 Which of these 3 models would you pick and why?
+
+It's clear that we'd definitely pick models 2 or 3 over 1. But between 2 and 3, the model choice seems to be less obvious.
 
 Approximately (no need to calculate this), what's the average years of education and wage rate for each income group? Hint: read the horizontal and vertical axis value for the midpoint of each line.
 
@@ -394,34 +622,61 @@ First plot the wage rate on vertical axis, and income groups on horizontal axis.
 
 ```{r wage-income-scatter}
 
+# Create a ggplot using the specified data and mappings.
 ggplot(
+  # Use the jobs dataset.
   jobs,
+  # Map variables to plot aesthetics.
   aes(
+    # Convert income groups into an ordered factor.
     x = factor(
+      # Assign labels based on income-group conditions.
       case_when(
+        # Identify low-income occupations.
         low_income_occ == 1 ~ "Low",
+        # Identify medium-income occupations.
         medium_income_occ == 1 ~ "Medium",
+        # Identify high-income occupations.
         high_income_occ == 1 ~ "High"
+      # Close this function and continue the expression.
       ),
+      # Order the income categories from low to high.
       levels = c("Low", "Medium", "High")
+    # Close this function and continue the expression.
     ),
+    # Set the vertical variable or axis label.
     y = median_wage_rate
+  # Close the current function call.
   )
+# Close this function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point() +
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate by Income Group",
+    # Set the horizontal variable or axis label.
     x = "Income Group",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 ```{r wage-income-avgs}
+# Pass the jobs dataset into the next operation.
 jobs %>%
+  # Calculate group summary statistics.
   summarise(
+    # Calculate the mean for low-income occupations.
     low = mean(median_wage_rate[low_income_occ == 1]),
+    # Calculate the mean for medium-income occupations.
     medium = mean(median_wage_rate[medium_income_occ == 1]),
+    # Calculate the mean for high-income occupations.
     high = mean(median_wage_rate[high_income_occ == 1])
+  # Close the current function call.
   )
 ```
 
@@ -430,58 +685,98 @@ Now run the following regression.
 
 
 ```{r wage-income-reg}
+# Fit a linear regression with the specified predictors.
 wage_income_reg <- lm(
+  # Model median wage as a function of the listed predictors.
   median_wage_rate ~ medium_income_occ + high_income_occ,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
+# Display regression coefficients in a tidy table.
 tidy(wage_income_reg)
 ```
 
 
 What do you conclude about the coefficients of the dummy variables in this regression? What do they help you calculate? (Hint: The intercept is the same as? Can I exactly get the averages for the medium and high income groups using the coefficients of the dummy variables?)
 
+It appears as if the regression gives the average values of wage for the low, medium and high income groups. 14.859+3 = 17.859 is the average wage for the medium income group. 14.859+10.141 = 25 is the average wage for the high income group. 
+
+We'll see why a regression can be used to calculate means in just a moment. 
 
 Similarly, for education.
 
 
 ```{r educ-income-scatter}
 
+# Create a ggplot using the specified data and mappings.
 ggplot(
+  # Use the jobs dataset.
   jobs,
+  # Map variables to plot aesthetics.
   aes(
+    # Convert income groups into an ordered factor.
     x = factor(
+      # Assign labels based on income-group conditions.
       case_when(
+        # Identify low-income occupations.
         low_income_occ == 1 ~ "Low",
+        # Identify medium-income occupations.
         medium_income_occ == 1 ~ "Medium",
+        # Identify high-income occupations.
         high_income_occ == 1 ~ "High"
+      # Close this function and continue the expression.
       ),
+      # Order the income categories from low to high.
       levels = c("Low", "Medium", "High")
+    # Close this function and continue the expression.
     ),
+    # Set the vertical variable or axis label.
     y = avg_years_of_education
+  # Close the current function call.
   )
+# Close this function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point() +
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Years of Education by Income Group",
+    # Set the horizontal variable or axis label.
     x = "Income Group",
+    # Set the vertical variable or axis label.
     y = "Years of Education"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 ```{r educ-income-avgs}
+# Pass the jobs dataset into the next operation.
 jobs %>%
+  # Calculate group summary statistics.
   summarise(
+    # Calculate the mean for low-income occupations.
     low = mean(avg_years_of_education[low_income_occ == 1]),
+    # Calculate the mean for medium-income occupations.
     medium = mean(avg_years_of_education[medium_income_occ == 1]),
+    # Calculate the mean for high-income occupations.
     high = mean(avg_years_of_education[high_income_occ == 1])
+  # Close the current function call.
   )
 ```
 
 ```{r educ-income-reg}
+# Fit a linear regression with the specified predictors.
 educ_income_reg <- lm(
+  # Model education as a function of the listed predictors.
   avg_years_of_education ~ medium_income_occ + high_income_occ,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
+# Display regression coefficients in a tidy table.
 tidy(educ_income_reg)
 ```
 
@@ -495,34 +790,59 @@ Now let's focus on the low income group, with the average wage in this group plo
 
 ```{r wage-income-scatter-lowinc}
 
+# Create a ggplot using the specified data and mappings.
 ggplot(
+  # Keep observations matching this condition.
   filter(jobs, low_income_occ == 1),
+  # Map variables to plot aesthetics.
   aes(
+    # Set the horizontal variable or axis label.
     x = "Low",
+    # Set the vertical variable or axis label.
     y = median_wage_rate
+  # Close the current function call.
   )
+# Close this function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point() +
   
   # Average wage
+  # Draw a horizontal reference line.
   geom_hline(
+    # Set the fitted line intercept for this income group.
     yintercept = mean(
+      # Select the relevant jobs variable for this calculation.
       jobs$median_wage_rate[jobs$low_income_occ == 1],
+      # Exclude missing observations from the mean.
       na.rm = TRUE
+    # Close this function and continue the expression.
     ),
+    # Set the colour of the plotted element.
     colour = "red",
+    # Set the width of the plotted line.
     linewidth = 1
+  # Close this function and continue the expression.
   ) +
   
+  # Configure the vertical axis scale.
   scale_y_continuous(
+    # Specify tick positions along the axis.
     breaks = seq(0, 40, by = 5)
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate for the Low Income Group",
+    # Set the horizontal variable or axis label.
     x = "Income Group",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 
 ```
@@ -530,130 +850,213 @@ ggplot(
 
 How do you identify the residual in this plot?
 
+It's the distance from the dots to the red line. You'll have as many residuals as the number of dots.
 
-In the picture above, the residual gives the deviation of each job's wage rate from the average wage rate of the ____ income group.
+
+In the picture above, the residual gives the deviation of each job's wage rate from the average wage rate of the low income group.
 
 
 ```{r educ-income-scatter-lowinc}
 
+# Create a ggplot using the specified data and mappings.
 ggplot(
+  # Keep observations matching this condition.
   filter(jobs, low_income_occ == 1),
+  # Map variables to plot aesthetics.
   aes(
+    # Set the horizontal variable or axis label.
     x = "Low",
+    # Set the vertical variable or axis label.
     y = avg_years_of_education
+  # Close the current function call.
   )
+# Close this function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point() +
   
   # Average wage
+  # Draw a horizontal reference line.
   geom_hline(
+    # Set the fitted line intercept for this income group.
     yintercept = mean(
+      # Select the relevant jobs variable for this calculation.
       jobs$avg_years_of_education[jobs$low_income_occ == 1],
+      # Exclude missing observations from the mean.
       na.rm = TRUE
+    # Close this function and continue the expression.
     ),
+    # Set the colour of the plotted element.
     colour = "red",
+    # Set the width of the plotted line.
     linewidth = 1
+  # Close this function and continue the expression.
   ) +
   
+  # Configure the vertical axis scale.
   scale_y_continuous(
+    # Specify tick positions along the axis.
     breaks = seq(0, 40, by = 5)
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Years of Education for the Low Income Group",
+    # Set the horizontal variable or axis label.
     x = "Income Group",
+    # Set the vertical variable or axis label.
     y = "Average Years of Education"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 
 ```
 
 
-In the picture above, the residual gives the deviation of each job's years of education from the average years of education of the ____ income group.
+In the picture above, the residual gives the deviation of each job's years of education from the average years of education of the low income group.
 
 
 Back to our old plot but adding fitted values.
 
 
 ```{r wage-income-scatter-w-fittedavg}
+# Create a ggplot using the specified data and mappings.
 ggplot(
+  # Use the jobs dataset.
   jobs,
+  # Map variables to plot aesthetics.
   aes(
+    # Convert income groups into an ordered factor.
     x = factor(
+      # Assign labels based on income-group conditions.
       case_when(
+        # Identify low-income occupations.
         low_income_occ == 1 ~ "Low",
+        # Identify medium-income occupations.
         medium_income_occ == 1 ~ "Medium",
+        # Identify high-income occupations.
         high_income_occ == 1 ~ "High"
+      # Close this function and continue the expression.
       ),
+      # Order the income categories from low to high.
       levels = c("Low", "Medium", "High")
+    # Close this function and continue the expression.
     ),
+    # Set the vertical variable or axis label.
     y = median_wage_rate
+  # Close the current function call.
   )
+# Close this function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point() +
   
   # Fitted average for each income group
+  # Display summary statistics for each group.
   stat_summary(
+    # Calculate the arithmetic mean within each group.
     fun = mean,
+    # Show the mean as a crossbar.
     geom = "crossbar",
+    # Set the width of the summary marker.
     width = 0.5,
+    # Set the colour of the plotted element.
     colour = "red",
+    # Set the width of the plotted line.
     linewidth = 1
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate by Income Group",
+    # Set the horizontal variable or axis label.
     x = "Income Group",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
 
-The residuals in this plot describes the deviation of each job's wage rate from the average wage rate for each ____ group
+The residuals in this plot describes the deviation of each job's wage rate from the average wage rate for each income group
 OR
-The residuals give the wage dispersion, in each _____ group.
+The residuals give the wage dispersion, in each income group.
 OR 
-The residuals give the wage dispersion, within each _____ group.
+The residuals give the wage dispersion, within each income group.
 
 
 ```{r educ-income-scatter-w-fittedavg}
+# Create a ggplot using the specified data and mappings.
 ggplot(
+  # Use the jobs dataset.
   jobs,
+  # Map variables to plot aesthetics.
   aes(
+    # Convert income groups into an ordered factor.
     x = factor(
+      # Assign labels based on income-group conditions.
       case_when(
+        # Identify low-income occupations.
         low_income_occ == 1 ~ "Low",
+        # Identify medium-income occupations.
         medium_income_occ == 1 ~ "Medium",
+        # Identify high-income occupations.
         high_income_occ == 1 ~ "High"
+      # Close this function and continue the expression.
       ),
+      # Order the income categories from low to high.
       levels = c("Low", "Medium", "High")
+    # Close this function and continue the expression.
     ),
+    # Set the vertical variable or axis label.
     y = avg_years_of_education
+  # Close the current function call.
   )
+# Close this function and continue the expression.
 ) +
+  # Plot observations as scatterplot points.
   geom_point() +
   
   # Fitted average for each income group
+  # Display summary statistics for each group.
   stat_summary(
+    # Calculate the arithmetic mean within each group.
     fun = mean,
+    # Show the mean as a crossbar.
     geom = "crossbar",
+    # Set the width of the summary marker.
     width = 0.5,
+    # Set the colour of the plotted element.
     colour = "red",
+    # Set the width of the plotted line.
     linewidth = 1
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Years of Education by Income Group",
+    # Set the horizontal variable or axis label.
     x = "Income Group",
+    # Set the vertical variable or axis label.
     y = "Years of Education"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
-The residuals in this plot describes the deviation of each job's average years of education from the average years of education for each ____ group
+The residuals in this plot describes the deviation of each job's average years of education from the average years of education for each income group
 OR
-The residuals give the dispersion of average years of education, within each _____ group.
+The residuals give the dispersion of average years of education, within each income group.
 
 
 ### Multiple linear regression as residual dispersion after controls
@@ -664,13 +1067,18 @@ $$Wage_i = \beta_0 + \beta_1 Education_i + \beta_2MediumIncome_i + \beta_3HighIn
 
 How do we interpret $\beta_1$?
 
-To do so, let's first find the coefficient estimate $\hat{\beta_1}$.
+It's the predicted increase in wage for an additional year of education, **for a given worker regardless of their income group**. The second part of the sentence may not be clear to you yet. Let's see why.
+
+Let's first find the coefficient estimate $\hat{\beta_1}$.
 
 
 ```{r print-coef-wage-educ-inc-reg}
 
+# Display regression coefficients in a tidy table.
 tidy(wage_educ_income_reg) %>%
+  # Keep observations matching this condition.
   filter(term == "avg_years_of_education") %>%
+  # Select the requested columns.
   select(estimate, std.error)
 
 ```
@@ -680,39 +1088,66 @@ And let's remind ourselves that this is the same slope as in the 3 lines below:
 
 ```{r wage-educ-income-scatter-2}
 # Plot
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or axis label.
                  y = median_wage_rate)) +
   
   # Scatter points
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
   
   # Parallel fitted lines
+  # Draw a fitted line using its intercept and slope.
   geom_abline(aes(intercept = low_intercept,
+                  # Use the estimated education slope for this line.
                   slope = educ_slope,
+                  # Set the colour of the plotted element.
                   colour = "Low"),
+              # Set the width of the plotted line.
               linewidth = 1) +
   
+  # Draw a fitted line using its intercept and slope.
   geom_abline(aes(intercept = medium_intercept,
+                  # Use the estimated education slope for this line.
                   slope = educ_slope,
+                  # Set the colour of the plotted element.
                   colour = "Medium"),
+              # Set the width of the plotted line.
               linewidth = 1) +
   
+  # Draw a fitted line using its intercept and slope.
   geom_abline(aes(intercept = high_intercept,
+                  # Use the estimated education slope for this line.
                   slope = educ_slope,
+                  # Set the colour of the plotted element.
                   colour = "High"),
+              # Set the width of the plotted line.
               linewidth = 1) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -722,98 +1157,179 @@ Let's plot the lines corresponding to the means of the high, medium and low inco
 
 ```{r wage-educ-inclines-scatter}
 # Group means
+# Calculate the mean for this income group.
 low_mean_wage <- mean(
+  # Select the relevant jobs variable for this calculation.
   jobs$median_wage_rate[jobs$low_income_occ == 1],
+  # Exclude missing observations from the mean.
   na.rm = TRUE
+# Close the current function call.
 )
+# Calculate the mean for this income group.
 low_mean_educ <- mean(
+  # Select the relevant jobs variable for this calculation.
   jobs$avg_years_of_education[jobs$low_income_occ == 1],
+  # Exclude missing observations from the mean.
   na.rm = TRUE
+# Close the current function call.
 )
 
+# Calculate the mean for this income group.
 medium_mean_wage <- mean(
+  # Select the relevant jobs variable for this calculation.
   jobs$median_wage_rate[jobs$medium_income_occ == 1],
+  # Exclude missing observations from the mean.
   na.rm = TRUE
+# Close the current function call.
 )
+# Calculate the mean for this income group.
 medium_mean_educ <- mean(
+  # Select the relevant jobs variable for this calculation.
   jobs$avg_years_of_education[jobs$medium_income_occ == 1],
+  # Exclude missing observations from the mean.
   na.rm = TRUE
+# Close the current function call.
 )
 
+# Calculate the mean for this income group.
 high_mean_wage <- mean(
+  # Select the relevant jobs variable for this calculation.
   jobs$median_wage_rate[jobs$high_income_occ == 1],
+  # Exclude missing observations from the mean.
   na.rm = TRUE
+# Close the current function call.
 )
+# Calculate the mean for this income group.
 high_mean_educ <- mean(
+  # Select the relevant jobs variable for this calculation.
   jobs$avg_years_of_education[jobs$high_income_occ == 1],
+  # Exclude missing observations from the mean.
   na.rm = TRUE
+# Close the current function call.
 )
 
 
 # Plot
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = avg_years_of_education,
+                 # Set the vertical variable or axis label.
                  y = median_wage_rate)) +
   
   # Scatter points
+  # Plot observations as scatterplot points.
   geom_point(
+    # Select observations belonging to the specified group.
     data = subset(jobs, low_income_occ == 1),
+    # Map variables to plot aesthetics.
     aes(colour = "Low")
+  # Close this function and continue the expression.
   ) +
+  # Plot observations as scatterplot points.
   geom_point(
+    # Select observations belonging to the specified group.
     data = subset(jobs, medium_income_occ == 1),
+    # Map variables to plot aesthetics.
     aes(colour = "Medium")
+  # Close this function and continue the expression.
   ) +
+  # Plot observations as scatterplot points.
   geom_point(
+    # Select observations belonging to the specified group.
     data = subset(jobs, high_income_occ == 1),
+    # Map variables to plot aesthetics.
     aes(colour = "High")
+  # Close this function and continue the expression.
   ) +
   
   # Mean education: vertical lines
+  # Draw a vertical reference line.
   geom_vline(
+    # Map variables to plot aesthetics.
     aes(xintercept = low_mean_educ, colour = "Low"),
+    # Set the reference line style.
     linetype = "dashed",
+    # Set the width of the plotted line.
     linewidth = 1,
+    # Set the transparency of the plotted elements.
     alpha = 0.4
+  # Close this function and continue the expression.
   ) +
+  # Draw a vertical reference line.
   geom_vline(
+    # Map variables to plot aesthetics.
     aes(xintercept = medium_mean_educ, colour = "Medium"),
+    # Set the reference line style.
     linetype = "dashed",
+    # Set the width of the plotted line.
     linewidth = 1,
+    # Set the transparency of the plotted elements.
     alpha = 0.4
+  # Close this function and continue the expression.
   ) +
+  # Draw a vertical reference line.
   geom_vline(
+    # Map variables to plot aesthetics.
     aes(xintercept = high_mean_educ, colour = "High"),
+    # Set the reference line style.
     linetype = "dashed",
+    # Set the width of the plotted line.
     linewidth = 1,
+    # Set the transparency of the plotted elements.
     alpha = 0.4
+  # Close this function and continue the expression.
   ) +
   
   # Mean wage: horizontal lines
+  # Draw a horizontal reference line.
   geom_hline(
+    # Map variables to plot aesthetics.
     aes(yintercept = low_mean_wage, colour = "Low"),
+    # Set the reference line style.
     linetype = "dashed",
+    # Set the width of the plotted line.
     linewidth = 1,
+    # Set the transparency of the plotted elements.
     alpha = 0.4
+  # Close this function and continue the expression.
   ) +
+  # Draw a horizontal reference line.
   geom_hline(
+    # Map variables to plot aesthetics.
     aes(yintercept = medium_mean_wage, colour = "Medium"),
+    # Set the reference line style.
     linetype = "dashed",
+    # Set the width of the plotted line.
     linewidth = 1,
+    # Set the transparency of the plotted elements.
     alpha = 0.4
+  # Close this function and continue the expression.
   ) +
+  # Draw a horizontal reference line.
   geom_hline(
+    # Map variables to plot aesthetics.
     aes(yintercept = high_mean_wage, colour = "High"),
+    # Set the reference line style.
     linetype = "dashed",
+    # Set the width of the plotted line.
     linewidth = 1,
+    # Set the transparency of the plotted elements.
     alpha = 0.4
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education by Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -824,104 +1340,166 @@ We will de-mean the wage and education variables as in a simple linear regressio
 ```{r residual-regressions}
 
 # (1) Regress wage rate on the three income-level dummies
+# Fit a linear regression with the specified predictors.
 reg_wage <- lm(
+  # Model median wage as a function of the listed predictors.
   median_wage_rate ~ low_income_occ + medium_income_occ + high_income_occ - 1,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
 
 # (2) Regress education on the three income-level dummies
+# Fit a linear regression with the specified predictors.
 reg_education <- lm(
+  # Model education as a function of the listed predictors.
   avg_years_of_education ~ low_income_occ + medium_income_occ + high_income_occ - 1,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
 
 # Store residuals as new columns
+# Store model residuals in a new jobs column.
 jobs$wage_residual <- residuals(reg_wage)
+# Store model residuals in a new jobs column.
 jobs$education_residual <- residuals(reg_education)
 
 
 # Plot residualised wage against residualised education
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = education_residual,
+                 # Set the vertical variable or axis label.
                  y = wage_residual)) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education",
+    # Set the plot subtitle.
     subtitle = "Controlling for Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education (after accounting for income level)",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate (after accounting for income level)",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 
 ```
 
 What's the intercept of this line?
 
+It's 0 because we've demeaned it.
+
 Let's find the slope of this line, and compare it to a coefficient from the old regression for 3 lines with the same slope.
 
 
 ```{r wage-educ-residualized}
+# Fit a linear regression with the specified predictors.
 wage_educ_residualized_reg <- lm(
+  # Regress wage residuals on education residuals.
   wage_residual ~ education_residual,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
+# Display regression coefficients in a tidy table.
 tidy(wage_educ_residualized_reg)
 ```
 
 
-Is the coefficient and standard error different?
+Is the coefficient and standard error different? The coefficient is the exact same! The standard errors are the same up to 3 decimal places.
 
 Now let's add the 95% confidence intervals for the lines. 
 
 ```{r wage-educ-resid-with-ci-scatter}
 # Plot residualised wage against residualised education
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = education_residual,
+                 # Set the vertical variable or axis label.
                  y = wage_residual)) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
   
   # Linear fit with 95% confidence interval
+  # Add a fitted regression curve.
   geom_smooth(
+    # Fit the curve using linear regression.
     method = "lm",
+    # Specify the polynomial form of the fitted curve.
     formula = y ~ x,
+    # Set whether to display the confidence band.
     se = TRUE,
+    # Set the colour of the plotted element.
     colour = "black",
+    # Set the transparency of the plotted elements.
     alpha = 0.6
+  # Close this function and continue the expression.
   ) +
   
+  # Configure the horizontal axis scale.
   scale_x_continuous(
+    # Specify tick positions along the axis.
     breaks = scales::breaks_pretty(n = 6)
+  # Close this function and continue the expression.
   ) +
   
+  # Configure the vertical axis scale.
   scale_y_continuous(
+    # Specify tick positions along the axis.
     breaks = scales::breaks_pretty(n = 6)
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education",
+    # Set the plot subtitle.
     subtitle = "Controlling for Income Level",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education (after accounting for income level)",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate (after accounting for income level)",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
@@ -936,6 +1514,7 @@ OR
 Accounting for broad differences between high, medium and low income occupations, $\hat{\beta_1}$ gives the average increase in wage, for an increase in a year of education in any job.
 
 Seeing this graph, which model would you pick?
+It's still not so straightforward, but if we were to draw separate lines through each of the coloured points in this de-meaned plot, we'd see that they more or less overlap each other. Which means that the simpler model 2 above, would be more suitable. I leave the visualization of model 3 to you.
 
 ## 1.4: Visualizing the many-predictor problem
 
@@ -943,146 +1522,250 @@ We follow the same procedure as earlier to add many regressors, while focusing o
 
 ```{r residualise-with-controls}
 
+# Fit a linear regression with the specified predictors.
 reg_wage_controls <- lm(
+  # Model median wage as a function of the listed predictors.
   median_wage_rate ~
+    # Control for this income-group indicator.
     high_income_occ +
+    # Control for this income-group indicator.
     medium_income_occ +
+    # Control for this income-group indicator.
     low_income_occ +
+    # Control for the number of transferable skills.
     number_of_transferable_skills +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_5_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_4_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_3_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_2_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_1_proficiency +
+    # Control for the weighted skill score.
     weighted_skill_score +
+    # Control for this occupational category.
     managers_directors_senior_officials +
+    # Control for this occupational category.
     professional_occupations +
+    # Control for this occupational category.
     associate_professional_occupations +
+    # Control for this occupational category.
     administrative_secretarial_occupations +
+    # Control for this occupational category.
     skilled_trades_occupations +
+    # Control for this occupational category.
     caring_leisure_other_service_occupations +
+    # Control for this occupational category.
     sales_customer_service_occupations +
+    # Control for this occupational category.
     process_plant_machine_operatives +
+    # Control for this occupational category.
     elementary_occupations +
+    # Control for years of experience.
     years_of_experience +
+    # Control for the squared experience term and omit the intercept.
     I(years_of_experience^2) - 1,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
 
 # Store wage residuals
+# Store model residuals in a new jobs column.
 jobs$wage_residual_controls <- residuals(reg_wage_controls)
 ```
 
 ```{r residualise-education-with-controls}
 
+# Fit a linear regression with the specified predictors.
 reg_education_controls <- lm(
+  # Model education as a function of the listed predictors.
   avg_years_of_education ~
+    # Control for this income-group indicator.
     high_income_occ +
+    # Control for this income-group indicator.
     medium_income_occ +
+    # Control for this income-group indicator.
     low_income_occ +
+    # Control for the number of transferable skills.
     number_of_transferable_skills +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_5_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_4_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_3_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_2_proficiency +
+    # Control for the share of skills at this proficiency level.
     share_of_skills_at_level_1_proficiency +
+    # Control for the weighted skill score.
     weighted_skill_score +
+    # Control for this occupational category.
     managers_directors_senior_officials +
+    # Control for this occupational category.
     professional_occupations +
+    # Control for this occupational category.
     associate_professional_occupations +
+    # Control for this occupational category.
     administrative_secretarial_occupations +
+    # Control for this occupational category.
     skilled_trades_occupations +
+    # Control for this occupational category.
     caring_leisure_other_service_occupations +
+    # Control for this occupational category.
     sales_customer_service_occupations +
+    # Control for this occupational category.
     process_plant_machine_operatives +
+    # Control for this occupational category.
     elementary_occupations +
+    # Control for years of experience.
     years_of_experience +
+    # Control for the squared experience term and omit the intercept.
     I(years_of_experience^2) - 1,
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
 
 # Store education residuals
+# Store model residuals in a new jobs column.
 jobs$education_residual_controls <- residuals(reg_education_controls)
 ```
 
 ```{r residual-plot-with-controls}
 
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = education_residual_controls,
+                 # Set the vertical variable or axis label.
                  y = wage_residual_controls)) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
   
+  # Configure the horizontal axis scale.
   scale_x_continuous(
+    # Specify tick positions along the axis.
     breaks = scales::breaks_pretty(n = 6)
+  # Close this function and continue the expression.
   ) +
   
+  # Configure the vertical axis scale.
   scale_y_continuous(
+    # Specify tick positions along the axis.
     breaks = scales::breaks_pretty(n = 6)
+  # Close this function and continue the expression.
   ) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Wage Rate vs Education",
+    # Set the plot subtitle.
     subtitle = "Controlling for skills, occupation and experience",
+    # Set the horizontal variable or axis label.
     x = "Average Years of Education (after controls)",
+    # Set the vertical variable or axis label.
     y = "Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
   
+  # Apply a minimal plot theme.
   theme_minimal()
 ```
 
-Compare the range of values taken by the data on the vertical and horizontal axes. 
+Compare the range of values taken by the data on the vertical and horizontal axes to the scatterplot after de-meaning in the previous section. Are the range of values smaller or larger? They are smaller.
 
 If you were to add more predictors, what would happen to the scatterplot eventually?
 
-Let's test this by adding the best predictor of an occupation as a control --- a dummy for each occupation.
+Let's test your prediction by doing an almost silly exercise. We'll add the best predictor of an occupation as a control --- a dummy for each occupation.
 
 
 ```{r soc-code-residualisation}
 
 # (1) Residualise wage rate using SOC-code dummies
+# Fit a linear regression with the specified predictors.
 reg_wage_soc <- lm(
+  # Model median wage as a function of the listed predictors.
   median_wage_rate ~ factor(soc_code),
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
 
 # (2) Residualise education using SOC-code dummies
+# Fit a linear regression with the specified predictors.
 reg_education_soc <- lm(
+  # Model education as a function of the listed predictors.
   avg_years_of_education ~ factor(soc_code),
+  # Use the specified dataset for this layer or model.
   data = jobs
+# Close the current function call.
 )
 
 # Store residuals
+# Store model residuals in a new jobs column.
 jobs$wage_residual_soc <- residuals(reg_wage_soc)
+# Store model residuals in a new jobs column.
 jobs$education_residual_soc <- residuals(reg_education_soc)
 
 
+# Create a ggplot using the specified data and mappings.
 ggplot(jobs, aes(x = education_residual_soc,
+                 # Set the vertical variable or axis label.
                  y = wage_residual_soc)) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, low_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Low")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, medium_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "Medium")) +
   
+  # Plot observations as scatterplot points.
   geom_point(data = subset(jobs, high_income_occ == 1),
+             # Map variables to plot aesthetics.
              aes(colour = "High")) +
   
+  # Specify plot titles and labels.
   labs(
+    # Set the plot title.
     title = "Residualised Wage Rate vs Residualised Education",
+    # Set the plot subtitle.
     subtitle = "Controlling for SOC Code",
+    # Set the horizontal variable or axis label.
     x = "Residualised Average Years of Education",
+    # Set the vertical variable or axis label.
     y = "Residualised Median Wage Rate",
+    # Set the colour of the plotted element.
     colour = "Income Level"
+  # Close this function and continue the expression.
   ) +
+  # Apply a minimal plot theme.
   theme_minimal()
 
 ```
+
+This plot has 392 points all overlapping each other at (0,0). This tells us that the more predictors we add, the more we remove relevant variation with respect to wage and education, eventually eliminating all variation from the data. In this case study, when running regressions to analyse the wage-education relationship, we have to balance a tradeoff between removing some variation (say from the choice of industry, which affects average wage and average years of education that people choose), and removing **too much** variation, (say by trying to perfectly predict wages using their job classification). 
+
+This relates to the problem of biased fits versus overfitting as you saw in the Lectures on Machine Learning.

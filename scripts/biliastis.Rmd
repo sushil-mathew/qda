@@ -1,0 +1,533 @@
+
+---
+title: "Biliastis Analysis"
+output: html_document
+---
+
+```{r libraries, message=FALSE, warning=FALSE}
+
+# Load the tidyverse packages for plotting and data manipulation.
+library(tidyverse)
+
+# Load the Biliastis dataset from the parent data folder.
+load("../data/biliastis.RData")
+
+```
+
+## Browse the dataset
+
+Browse the dataset. It looks like there are 4 distance variables that are useful to infer the source of the disease.
+
+We'll put them in a kind of list called a vector, so that it's easy to code going forward. `c()` is short for concatenate, and is a convenient function to put things together as a vector.
+
+```{r distance_list}
+# Create a vector containing the four distance variables.
+distance_vars <- c(
+  # Include the distance to the pestfield.
+  "distance_to_pestfield",
+  # Include the distance to the sewers.
+  "distance_to_sewers",
+  # Include the distance to pump 1.
+  "distance_to_pump1",
+  # Include the distance to pump 2.
+  "distance_to_pump2"
+# Close the vector.
+)
+```
+
+## Exploratory scatterplots
+
+We will run what's called a `for` loop. Read the code below as: For every distance variable (which we give a generic placeholder name as `distance`) from the `distance_vars` variable vector, make scatterplots.
+
+```{r initial-scatterplots, fig.width=7, fig.height=5}
+# Loop through each distance variable.
+for (distance in distance_vars) {
+
+  # Create a ggplot object for the scatterplot.
+  p <- ggplot(
+    # Select the original Biliastis dataset.
+    biliastis,
+    # Map the current distance to x and death rate to y.
+    aes(x = .data[[distance]], y = death_rate)
+  # Close ggplot and add another plot layer.
+  ) +
+    # Plot points with partial transparency.
+    geom_point(alpha = 0.4) +
+    # Add a title and axis labels.
+    labs(
+      # Generate a title using the current distance variable.
+      title = paste("Death Rate vs", distance),
+      # Label the x-axis with the distance variable.
+      x = distance,
+      # Label the y-axis as Death Rate.
+      y = "Death Rate"
+    # Close the labels and add another plot layer.
+    ) +
+    # Apply a minimal visual theme.
+    theme_minimal()
+
+  # Display the completed scatterplot.
+  print(p)
+# End the loop.
+}
+```
+
+## Drop the extreme outlier
+
+For now we drop the one point that's an outlier. We'll discuss its relevance in class (I discuss this briefly at the start of Tutorial 3 for Confidence Intervals --- see slides for the Tutorial). Create a new dataset without this outlier.
+
+```{r remove-outlier}
+# Create a new dataset from the original observations.
+biliastis_outlierdropped <- biliastis %>%
+  # Keep observations with pump 1 distance at most 8000.
+  filter(distance_to_pump1 <= 8000)
+```
+
+## Scatterplots after dropping the outlier
+
+```{r scatterplots-outlier-dropped, fig.width=7, fig.height=5}
+# Loop through each distance variable.
+for (distance in distance_vars) {
+
+  # Create a new scatterplot.
+  p <- ggplot(
+    # Use the dataset with the outlier removed.
+    biliastis_outlierdropped,
+    # Map the current distance to x and death rate to y.
+    aes(x = .data[[distance]], y = death_rate)
+  # Close ggplot and add another plot layer.
+  ) +
+    # Display points with partial transparency.
+    geom_point(alpha = 0.4) +
+    # Add a title and axis labels.
+    labs(
+      # Generate a title for the current distance variable.
+      title = paste("Death Rate vs", distance),
+      # Label the x-axis with the distance variable.
+      x = distance,
+      # Label the y-axis as Death Rate.
+      y = "Death Rate"
+    # Close the labels and add another plot layer.
+    ) +
+    # Apply a minimal visual theme.
+    theme_minimal()
+
+  # Display the completed scatterplot.
+  print(p)
+# End the loop.
+}
+```
+
+## De-mean death rate and distances
+
+```{r demean-variables}
+
+# Update the dataset to include de-meaned variables.
+biliastis_outlierdropped <- biliastis_outlierdropped %>%
+  # Create new variables by subtracting their means.
+  mutate(
+    # Create a de-meaned death rate variable.
+    death_rate_dm =
+      # Subtract the average death rate from each observation.
+      death_rate - mean(death_rate, na.rm = TRUE),
+
+    # Create a de-meaned pestfield distance variable.
+    distance_to_pestfield_dm =
+      # Select each observation's pestfield distance.
+      distance_to_pestfield -
+      # Calculate the average pestfield distance.
+      mean(distance_to_pestfield, na.rm = TRUE),
+
+    # Create a de-meaned sewer distance variable.
+    distance_to_sewers_dm =
+      # Select each observation's sewer distance.
+      distance_to_sewers -
+      # Calculate the average sewer distance.
+      mean(distance_to_sewers, na.rm = TRUE),
+
+    # Create a de-meaned pump 1 distance variable.
+    distance_to_pump1_dm =
+      # Select each observation's pump 1 distance.
+      distance_to_pump1 -
+      # Calculate the average pump 1 distance.
+      mean(distance_to_pump1, na.rm = TRUE),
+
+    # Create a de-meaned pump 2 distance variable.
+    distance_to_pump2_dm =
+      # Select each observation's pump 2 distance.
+      distance_to_pump2 -
+      # Calculate the average pump 2 distance.
+      mean(distance_to_pump2, na.rm = TRUE)
+  # Close the mutate function.
+  )
+
+# Create a vector containing the de-meaned distance variables.
+distance_vars_dm <- c(
+  # Include the de-meaned pestfield distance.
+  "distance_to_pestfield_dm",
+  # Include the de-meaned sewer distance.
+  "distance_to_sewers_dm",
+  # Include the de-meaned pump 1 distance.
+  "distance_to_pump1_dm",
+  # Include the de-meaned pump 2 distance.
+  "distance_to_pump2_dm"
+# Close the vector.
+)
+```
+
+## De-meaned scatterplots
+
+```{r demeaned-scatterplots, fig.width=7, fig.height=5}
+# Loop through each de-meaned distance variable.
+for (distance in distance_vars_dm) {
+
+  # Create a scatterplot for the de-meaned variables.
+  p <- ggplot(
+    # Use the dataset containing de-meaned variables.
+    biliastis_outlierdropped,
+    # Map de-meaned distance to x and de-meaned death rate to y.
+    aes(x = .data[[distance]], y = death_rate_dm)
+  # Close ggplot and add another plot layer.
+  ) +
+    # Plot points with partial transparency.
+    geom_point(alpha = 0.4) +
+    # Add a vertical reference line.
+    geom_vline(
+      # Position the vertical line at zero.
+      xintercept = 0,
+      # Display the vertical line as dotted.
+      linetype = "dotted"
+    # Close the vertical line layer and add another layer.
+    ) +
+    # Add a horizontal reference line.
+    geom_hline(
+      # Position the horizontal line at zero.
+      yintercept = 0,
+      # Display the horizontal line as dotted.
+      linetype = "dotted"
+    # Close the horizontal line layer and add another layer.
+    ) +
+    # Add a title and axis labels.
+    labs(
+      # Generate a title for the de-meaned variables.
+      title = paste("De-meaned Death Rate vs", distance),
+      # Label the x-axis with the current distance variable.
+      x = distance,
+      # Label the y-axis as de-meaned death rate.
+      y = "Death Rate (de-meaned)"
+    # Close the labels and add another plot layer.
+    ) +
+    # Apply a minimal visual theme.
+    theme_minimal()
+
+  # Display the completed scatterplot.
+  print(p)
+# End the loop.
+}
+```
+
+## Regressions and lines of best fit
+
+Now use `for` loops to repeat similar regressions. We do this by creating a generic formula which replaces the x variable with the 4 distance variables. Then run a regression, extract the slope, and print that slope on a scatterplot with a fitted line through it.
+
+```{r regressions, fig.width=7, fig.height=5}
+# Loop through each de-meaned distance variable.
+for (distance in distance_vars_dm) {
+
+  # Create a regression formula.
+  formula <- as.formula(
+    # Combine death rate and the current distance into a formula.
+    paste("death_rate_dm ~", distance)
+  # Close the formula function.
+  )
+
+  # Fit a linear regression model.
+  model <- lm(
+    # Use the formula created above.
+    formula,
+    # Select the dataset with the outlier removed.
+    data = biliastis_outlierdropped
+  # Close the regression function.
+  )
+
+  # Display the regression results.
+  print(summary(model))
+
+  # Extract the estimated slope coefficient.
+  slope <- coef(model)[2]
+
+  # Create a scatterplot of the regression variables.
+  p <- ggplot(
+    # Use the dataset containing de-meaned variables.
+    biliastis_outlierdropped,
+    # Map de-meaned distance to x and de-meaned death rate to y.
+    aes(x = .data[[distance]], y = death_rate_dm)
+  # Close ggplot and add another plot layer.
+  ) +
+    # Display points with partial transparency.
+    geom_point(alpha = 0.4) +
+    # Add a fitted regression line.
+    geom_smooth(
+      # Fit the line using linear regression.
+      method = "lm",
+      # Hide the confidence interval around the line.
+      se = FALSE
+    # Close the regression line layer and add another layer.
+    ) +
+    # Add a vertical reference line.
+    geom_vline(
+      # Position the vertical line at zero.
+      xintercept = 0,
+      # Display the vertical line as dotted.
+      linetype = "dotted"
+    # Close the vertical line layer and add another layer.
+    ) +
+    # Add a horizontal reference line.
+    geom_hline(
+      # Position the horizontal line at zero.
+      yintercept = 0,
+      # Display the horizontal line as dotted.
+      linetype = "dotted"
+    # Close the horizontal line layer and add another layer.
+    ) +
+    # Add a title and axis labels.
+    labs(
+      # Construct a title containing the slope.
+      title = paste(
+        # Display the current distance variable in the title.
+        "De-meaned Death Rate vs", distance,
+        # Display the slope rounded to five decimal places.
+        "\nSlope =", round(slope, 5)
+      # Close the title function.
+      ),
+      # Label the x-axis with the distance variable.
+      x = distance,
+      # Label the y-axis as de-meaned death rate.
+      y = "Death Rate (de-meaned)"
+    # Close the labels and add another plot layer.
+    ) +
+    # Apply a minimal visual theme.
+    theme_minimal()
+
+  # Display the scatterplot with its fitted regression line.
+  print(p)
+# End the loop.
+}
+```
+
+Pump 1 has the strongest correlation, based on the slope, the p-value, and the visual fit of the scatterplot with a line fit. While distance to pestfield is a likely candidate too, it's possible that pump 1 and the pestfield are close together. I see that for very tiny distances, distance to pump 1 has many points with non-zero death rates, whereas, distance to the pestfield has many points with 0 death rates at small distances. So we consider pump 1 as the potential source of the disease going forward.
+
+Of course, in a real-world situation we wouldn't just strongly conclude it's Pump 1. We might need to do further analysis to distinguish between Pump 1 and the Pestfield. For now, we proceed with Pump 1 for brevity.
+
+## Pump 1: rectangles coloured by sign
+
+```{r pump1-signs, fig.width=7, fig.height=6}
+
+# Update the dataset with a variable classifying sign combinations.
+biliastis_outlierdropped <- biliastis_outlierdropped %>%
+  # Create a categorical variable for the signs.
+  mutate(
+    # Classify observations based on the product of de-meaned values.
+    sign_group = case_when(
+      # Label positive products as having the same sign.
+      distance_to_pump1_dm * death_rate_dm > 0 ~ "Same sign",
+      # Label negative products as having opposite signs.
+      distance_to_pump1_dm * death_rate_dm < 0 ~ "Opposite signs",
+      # Label zero products as being on zero.
+      distance_to_pump1_dm * death_rate_dm == 0 ~ "On zero"
+    # Close the sign classification function.
+    )
+  # Close the mutate function.
+  )
+
+# Create a scatterplot with coloured rectangles.
+ggplot(
+  # Select the dataset containing the sign groups.
+  biliastis_outlierdropped,
+  # Define the variables used for plotting.
+  aes(
+    # Map de-meaned pump 1 distance to the x-axis.
+    x = distance_to_pump1_dm,
+    # Map de-meaned death rate to the y-axis.
+    y = death_rate_dm
+  # Close the aesthetic mappings.
+  )
+# Close ggplot and add another plot layer.
+) +
+  # Draw rectangles between the origin and each point.
+  geom_rect(
+    # Define rectangle boundaries and fill colours.
+    aes(
+      # Set the left boundary to the smaller x-value.
+      xmin = pmin(0, distance_to_pump1_dm),
+      # Set the right boundary to the larger x-value.
+      xmax = pmax(0, distance_to_pump1_dm),
+      # Set the bottom boundary to the smaller y-value.
+      ymin = pmin(0, death_rate_dm),
+      # Set the top boundary to the larger y-value.
+      ymax = pmax(0, death_rate_dm),
+      # Colour rectangle interiors according to sign group.
+      fill = sign_group
+    # Close the rectangle aesthetic mappings.
+    ),
+    # Make the rectangles highly transparent.
+    alpha = 0.05
+  # Close the rectangle layer and add another layer.
+  ) +
+  # Add scatterplot points over the rectangles.
+  geom_point(
+    # Colour points according to their sign group.
+    aes(colour = sign_group),
+    # Make the points partially transparent.
+    alpha = 0.5
+  # Close the point layer and add another layer.
+  ) +
+  # Add a vertical reference line.
+  geom_vline(
+    # Position the vertical line at zero.
+    xintercept = 0,
+    # Display the vertical line as dotted.
+    linetype = "dotted"
+  # Close the vertical line layer and add another layer.
+  ) +
+  # Add a horizontal reference line.
+  geom_hline(
+    # Position the horizontal line at zero.
+    yintercept = 0,
+    # Display the horizontal line as dotted.
+    linetype = "dotted"
+  # Close the horizontal line layer and add another layer.
+  ) +
+  # Assign specific fill colours to each sign group.
+  scale_fill_manual(
+    # Define the fill colour for each category.
+    values = c(
+      # Colour same-sign rectangles green.
+      "Same sign" = "green",
+      # Colour opposite-sign rectangles red.
+      "Opposite signs" = "red",
+      # Colour zero-value rectangles grey.
+      "On zero" = "grey"
+    # Close the fill colour vector.
+    )
+  # Close the fill scale and add another layer.
+  ) +
+  # Assign specific point colours to each sign group.
+  scale_colour_manual(
+    # Define the point colour for each category.
+    values = c(
+      # Colour same-sign points green.
+      "Same sign" = "green",
+      # Colour opposite-sign points red.
+      "Opposite signs" = "red",
+      # Colour zero-value points grey.
+      "On zero" = "grey"
+    # Close the point colour vector.
+    )
+  # Close the colour scale and add another layer.
+  ) +
+  # Add plot labels and configure the legends.
+  labs(
+    # Set the title of the scatterplot.
+    title = "De-meaned Death Rate vs Distance to Pump 1",
+    # Label the x-axis as de-meaned pump 1 distance.
+    x = "Distance to Pump 1 (de-meaned)",
+    # Label the y-axis as de-meaned death rate.
+    y = "Death Rate (de-meaned)",
+    # Remove the fill legend title.
+    fill = NULL,
+    # Remove the colour legend title.
+    colour = NULL
+  # Close the labels and add another plot layer.
+  ) +
+  # Apply a minimal visual theme.
+  theme_minimal()
+```
+
+
+You'll notice that the red colour dominates. Intuitively this tells us that more often than not, the death rate and distance to Pump 1 has an opposing relationship --- when one rises, the other one falls, in general. Based on how large the red triangles are, we can also see that the death rate falls by a lot, for an increase in distance to Pump 1.
+
+## Using the (signed) areas of the rectangles for a familiar calculation
+
+The area of these rectangles with the sign, gives the covariance. Now that you have an intuition for the covariance, hopefully the analytical slope formula tells you the meaning of the regression slope: it gives a number for how the outcome (y) and the regressor (x) co-varies with respect to how much the regressor (x) varies.
+
+```{r analytical-calc}
+# Calculate the numerator of the OLS slope formula.
+sum_xy <- sum(
+  # Multiply each de-meaned pump 1 distance by its death rate.
+  biliastis_outlierdropped$distance_to_pump1_dm *
+  # Select the corresponding de-meaned death rates.
+  biliastis_outlierdropped$death_rate_dm
+# Close the sum function.
+)
+
+# Calculate the denominator of the OLS slope formula.
+sum_x2 <- sum(
+  # Square each de-meaned pump 1 distance and sum the results.
+  biliastis_outlierdropped$distance_to_pump1_dm^2
+# Close the sum function.
+)
+
+# Calculate the OLS slope by dividing the numerator by the denominator.
+analytical_calc <- sum_xy / sum_x2
+
+# Display the analytically calculated OLS slope.
+analytical_calc
+```
+
+## (optional) Spatial distribution of death rates
+
+This is not going to be examined. 
+
+Another way to have done this exercise without using simple linear regression is to have plotted the death rates on a map as John Snow did. Of course, he did it by hand, and not using R.
+
+```{r spatial-plot, fig.width=8, fig.height=7}
+# Create a spatial scatterplot of death rates.
+ggplot(
+  # Use the dataset with the outlier removed.
+  biliastis_outlierdropped,
+  # Define spatial coordinates and point colours.
+  aes(
+    # Map easting coordinates to the x-axis.
+    x = location_easting,
+    # Map northing coordinates to the y-axis.
+    y = location_northing,
+    # Colour observations according to death rate.
+    colour = death_rate
+  # Close the aesthetic mappings.
+  )
+# Close ggplot and add another plot layer.
+) +
+  # Display each location as a point.
+  geom_point(
+    # Set the point size to two.
+    size = 2,
+    # Make the points slightly transparent.
+    alpha = 0.8
+  # Close the point layer and add another layer.
+  ) +
+  # Apply a continuous viridis colour scale.
+  scale_colour_viridis_c() +
+  # Keep equal scales on both spatial axes.
+  coord_equal() +
+  # Add the plot title and axis labels.
+  labs(
+    # Set the title of the spatial scatterplot.
+    title = "Spatial Distribution of Death Rates",
+    # Label the x-axis as Easting.
+    x = "Easting",
+    # Label the y-axis as Northing.
+    y = "Northing",
+    # Label the colour legend as Death Rate.
+    colour = "Death Rate"
+  # Close the labels and add another plot layer.
+  ) +
+  # Apply a minimal visual theme.
+  theme_minimal()
+```
+
+There's clearly a source at the center that's likely to be the cause.
+
+If we had the coordinates of pump 1, pump 2, the pestfield and sewer; then we can identify what this object is likely to have been. Based on data that I haven't shared, it is in fact pump 1 --- the Broad Street Pump, currently situated on Broadwick Street in Soho, London.
+
+This is not in your syllabus or won't be examined. But if you're curious, you can actually figure out the coordinates of the pestfield, sewer, pumps 1 and 2, (with a small margin of error) with the distance data that you have. In fact, you can use multiple linear regression to do this. If you're curious try this with AI.
