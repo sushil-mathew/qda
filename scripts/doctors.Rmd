@@ -335,6 +335,9 @@ tidy(ols_train_model)
 Here, I'm going to train a LASSO model. The details of this code is not important to you. The only thing you need to know is what the model is taking as input. Look at the `select()` function in `x_train`, and then look at `y_train`. What variables have I asked the model to choose from? Have I omitted some variables?
 
 ```{r lasso-train}
+
+# uncomment the line below (by removing the #) to install glmnet -- a package to run lasso -- if you don't have glmnet installed already
+#install.packages("glmnet")
 library(glmnet)
 
 # Create predictor matrix using training sample
