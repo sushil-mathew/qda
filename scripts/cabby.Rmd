@@ -1,0 +1,407 @@
+---
+title: "Cabby: Adaptive Randomised Controlled Trials"
+author: ""
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+This is an experiment run through multiple rounds. Each round has 10 customers, who face two options £2 and £2.1 per mile. At the end of each round, we decide how many customers face the £2 and the £2.1 rates in the next round. Today we'll stop at 3 rounds, and that will be the experiment concluded. At the end of the experiment, we could optionally calculate the price elasticity of demand --- which is beyond the scope of this module, but still an interesting way to connect data analysis techniques to economics concepts.
+
+## Overview
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(ggplot2)
+set.seed(123)
+```
+
+To do this problem sheet, we're going to take 5 steps.
+
+1.  Plot the theoretical Prior Beta distributions for £2 and £2.1 price treatments using observed successes and failures of the 2 price point treatments.
+2.  Pick out 100,000 values from each Prior Beta distribution for £2 and £2.1. Combine it into 100,000 pairs of picks (also known as) draws.
+3.  Make a scatter plot with the draw corresponding to £2 on the horizontal axis, and £2.1 on the vertical axis.
+4.  Use the Thompson sampling method to update the treatment probabilities.
+5.  Observe the successes and failures of each price offering under the treatment probability.
+
+After step 5, we update our prior distributions and conduct the next round of experiments, following steps 1-5 again.
+
+As a matter of definition, the updated priors are called a posterior after step 5. But called a prior when we go back to step 1.
+
+The following section has code that writes up steps 1 to 5 in detail so that the R knows exactly what to do. Then instead of writing this long code for each round of experimentation, You may skip this section entirely during your studies. However, if you like taking notes while studying, you may read these code blocks and try to summarize for yourself the logic of what we do in today's problem sets. That will be a guaranteed way to learn Adaptive Randomized Controlled Trials. I have provided comments on the code for it to be helpful.
+
+1.  Plot the theoretical Prior Beta distributions for £2 and £2.1 price treatments using observed successes and failures of the 2 price point treatments.
+
+```{r function-plot-beta-theoretical}
+
+# Store success and failures across rounds in a unified dataset
+beta_history <- data.frame(
+  roundnum = integer(),
+  price = character(),
+  successes = integer(),
+  failures = integer()
+)
+
+# define the function to plot theoretical beta distributions
+plot_beta_distributions <- function(
+    roundnum,
+    numsuccess_gbp2,
+    numfailure_gbp2,
+    numsuccess_gbp2pt1,
+    numfailure_gbp2pt1
+) {
+
+  # Store the current round's successes and failures  
+  current_round <- data.frame(
+    roundnum = rep(roundnum, 2),
+    price = c("gbp2", "gbp2pt1"),
+    successes = c(numsuccess_gbp2, numsuccess_gbp2pt1),
+    failures = c(numfailure_gbp2, numfailure_gbp2pt1)
+  )
+
+  # Update stored history of successeses and failures with current round's results
+  beta_history <<- rbind(
+    beta_history[beta_history$roundnum != roundnum, ],
+    current_round
+  )
+
+  # Use all rounds up to the current round
+  history <- beta_history[
+    beta_history$roundnum <= roundnum, 
+  ]
+
+  # Generate theoretical Beta density values in multiple steps
+  # Step a: define values for the x axis on the beta distribution ranging from 0-1 at 1/1000 intervals
+  p <- seq(0, 1, length.out = 1000)
+  
+  # step b: calculate beta distribution using values from the rounds
+  density_data <- do.call(
+    rbind,
+    lapply(seq_len(nrow(history)), function(i) {
+      
+      # define the 2 parameters for the beta distribution 
+      alpha <- history$successes[i] + 1
+      beta <- history$failures[i] + 1
+
+      data.frame(
+        # define variable: probability (of acceptance) for the x axis of the distribution
+        probability = p,
+        # define variable: density which is the theoretical beta density value
+        density = dbeta(p, alpha, beta),
+        price = history$price[i],
+        roundnum = history$roundnum[i],
+        # define and calculate the mean value of the beta distribution
+        mean = alpha / (alpha + beta)
+      )
+    })
+  )
+
+
+  # attach labels to the 2 treatments so that it appears nicely on the graph 
+  density_data$price <- factor(
+    density_data$price,
+    levels = c("gbp2", "gbp2pt1"),
+    labels = c("£2", "£2.1")
+  )
+
+
+  # Define visual properties for each round: lighter shades for early rounds, and dark shades for more recent rounds
+  round_widths <- seq(0.7, 1.4, length.out = roundnum + 1)
+  round_alphas <- seq(0.2, 1, length.out = roundnum + 2)[-1]
+  
+  names(round_widths) <- as.character(0:roundnum)
+  names(round_alphas) <- as.character(0:roundnum)
+  
+  # Only show mean lines for the current round
+  current_means <- unique(
+    density_data[
+      density_data$roundnum == roundnum,
+      c("price", "roundnum", "mean")
+    ]
+  )
+  
+  # draw the theoretical density plot using the data collected above
+  ggplot(
+    density_data,
+    aes(
+      x = probability,
+      y = density,
+      colour = price,
+      linetype = price,
+      alpha = factor(roundnum),
+      linewidth = factor(roundnum),
+      group = interaction(price, roundnum)
+    )
+  ) +
+    scale_linetype_manual(
+      values = c(
+        "£2" = "solid",
+        "£2.1" = "longdash"
+      ),
+      name = "Price"
+    ) +
+    geom_line() +
+    geom_vline(
+      data = current_means,
+      aes(
+        xintercept = mean,
+        colour = price
+      ),
+      inherit.aes = FALSE,
+      linetype = "dashed",
+      linewidth = 0.8
+    ) +
+    scale_colour_manual(
+      values = c(
+        "£2" = "#0072B2",
+        "£2.1" = "#D55E00"
+      )
+    ) +
+    scale_alpha_manual(
+      values = round_alphas,
+      name = "Round"
+    ) +
+    scale_linewidth_manual(
+      values = round_widths,
+      name = "Round"
+    ) +
+    guides(
+      alpha = guide_legend(
+        title = "Round"
+      ),
+      linewidth = guide_legend(
+        title = "Round"
+      )
+    ) +
+    labs(
+      title = paste(
+        "Posterior Distributions After Round",
+        roundnum
+      ),
+      x = "Acceptance probability",
+      y = "Density",
+      colour = "Price"
+    ) +
+    theme_minimal(base_size = 12)
+}
+```
+
+2.  Pick out 100,000 values from each Prior Beta distribution for £2 and £2.1. Combine it into 100,000 pairs of picks (also known as) draws.
+3.  Make a scatter plot with the draw corresponding to £2 on the horizontal axis, and £2.1 on the vertical axis.
+
+```{r function-plot-beta-pairs}
+
+plot_beta_pairs <- function(
+    numdraws,
+    numsuccess_gbp2,
+    numfailure_gbp2,
+    numsuccess_gbp2pt1,
+    numfailure_gbp2pt1
+) {
+
+  # Draw samples from the two posterior Beta distributions
+  draw_gbp2 <- rbeta(
+    numdraws,
+    numsuccess_gbp2 + 1,
+    numfailure_gbp2 + 1
+  )
+
+  draw_gbp2pt1 <- rbeta(
+    numdraws,
+    numsuccess_gbp2pt1 + 1,
+    numfailure_gbp2pt1 + 1
+  )
+
+  # Combine draws
+  pairs <- data.frame(
+    draw_gbp2 = draw_gbp2,
+    draw_gbp2pt1 = draw_gbp2pt1
+  )
+
+  # Identify which treatment wins each pair
+  pairs$winner <- ifelse(
+    pairs$draw_gbp2 > pairs$draw_gbp2pt1,
+    "£2", "£2.1"
+  )
+
+  # Calculate probabilities of each treatment winning
+  prob_gbp2 <- mean(pairs$winner == "£2")
+  prob_gbp2pt1 <- 1 - prob_gbp2
+
+  # Create subtitle
+  subtitle_text <- sprintf(
+    "Probability that £2 is preferred: %.2f%%; £2.1 is preferred: %.2f%%",
+    100 * prob_gbp2,
+    100 * prob_gbp2pt1
+  )
+
+  # Determine overall winning treatment
+  if (prob_gbp2 > 0.5) {
+
+    # £2 wins: blue below diagonal, grey above
+    pairs$point_colour <- ifelse(
+      pairs$winner == "£2",
+      "#0072B2",
+      "grey75"
+    )
+
+  } else if (prob_gbp2 < 0.5) {
+
+    # £2.1 wins: vermilion above diagonal, grey below
+    pairs$point_colour <- ifelse(
+      pairs$winner == "£2.1",
+      "#D55E00",
+      "grey75"
+    )
+
+  } else {
+
+    # Exact 50-50 tie: all points grey
+    pairs$point_colour <- "grey75"
+
+  }
+
+  # Plot simulated posterior pairs
+  ggplot(
+    pairs,
+    aes(x = draw_gbp2, y = draw_gbp2pt1)
+  ) +
+
+    geom_point(
+      aes(colour = point_colour),
+      alpha = 0.12,
+      size = 0.5
+    ) +
+
+    # 45-degree reference line
+    geom_abline(
+      slope = 1,
+      intercept = 0,
+      colour = "black",
+      linewidth = 0.8,
+      linetype = "dashed"
+    ) +
+
+    # Use exact point colours
+    scale_colour_identity() +
+
+    coord_equal(
+      xlim = c(0, 1),
+      ylim = c(0, 1),
+      expand = FALSE
+    ) +
+
+    labs(
+      title = "Simulated Posterior Pairs",
+      subtitle = subtitle_text,
+      x = "Acceptance probability (£2)",
+      y = "Acceptance probability (£2.1)"
+    ) +
+
+    theme_minimal(base_size = 12) +
+
+    theme(
+      legend.position = "none"
+    )
+}
+
+
+```
+
+4.  Use the Thompson sampling method to update the treatment probabilities.
+5.  Observe the successes and failures of each price offering under the treatment probability.
+
+## 1. Uniform prior
+
+A Beta distribution can be written as Beta(s+1, f+1). In the Beta-Bernoulli model (a type of Adaptive RCTs that you studied in the lectures), what does s and f stand for?
+
+A standard uniform distribution can be written as U[0,1]. It can also be written as Beta distribution. What would be the s and f in that case?
+
+We have a £2 and £2.1 treatment. Fill the s and f for a uniform prior.
+
+```{r round0-plot-beta}
+plot_beta_distributions(
+  roundnum = 0,
+  numsuccess_gbp2 = ,
+  numfailure_gbp2 = ,
+  numsuccess_gbp2pt1 = ,
+  numfailure_gbp2pt1 = 
+)
+```
+
+```{r round0-draw-pairs}
+plot_beta_pairs(
+  numdraws = 100000,
+  numsuccess_gbp2 = 0,
+  numfailure_gbp2 = 0,
+  numsuccess_gbp2pt1 = 0,
+  numfailure_gbp2pt1 = 0
+)
+```
+
+What is the idea behind Thompson sampling? It is a rule that helps us choose the probabilities for the treatments in the next round based on the last round's results.
+
+It says that Probability(user sees option k in the next round) = Prob(\_\_\_\_\_\_\_\_\_\_\_\_\_).
+
+## 2. First round: 10 customers
+
+Five customers are offered each price. Four of five accept £2, and two of five accept £2.1.
+
+For Beta(s+1, f+1), what are s and f for the two offers?
+
+### Posterior density curves after round 1
+
+```{r round1-plot-beta}
+plot_beta_distributions(
+  roundnum = 1,
+  numsuccess_gbp2 = ,
+  numfailure_gbp2 = ,
+  numsuccess_gbp2pt1 = ,
+  numfailure_gbp2pt1 = 
+)
+```
+
+### Simulate 100,000 pairs and plot them
+
+```{r round1-draw-pairs}
+plot_beta_pairs(
+  numdraws = 100000,
+  numsuccess_gbp2 = ,
+  numfailure_gbp2 = ,
+  numsuccess_gbp2pt1 = ,
+  numfailure_gbp2pt1 = 
+)
+```
+
+As per Thompson sampling, what would you assign as the treatment probabilities for the next round?
+
+## 3. Second round: 10 more customers
+
+8 customers are offered £2 and 2 are offered £2.1. 4/8 accept £2, and 2/2 accept £2.1.
+
+For Beta(s+1, f+1), what are s and f for both the options?
+
+```{r round2-plot-beta}
+plot_beta_distributions(
+  roundnum = 2,
+  numsuccess_gbp2 = ,
+  numfailure_gbp2 = ,
+  numsuccess_gbp2pt1 = ,
+  numfailure_gbp2pt1 = 
+)
+```
+
+Describe what happened at this update.
+
+### Simulate 100,000 updated pairs and plot them
+
+```{r round2-draw-pairs}
+plot_beta_pairs(
+  numdraws = 100000,
+  numsuccess_gbp2 = ,
+  numfailure_gbp2 = ,
+  numsuccess_gbp2pt1 = ,
+  numfailure_gbp2pt1 = 
+)
+```
+
+What should be the treatment probability for the next round of 10 customers?
