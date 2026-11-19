@@ -314,7 +314,7 @@ plot_beta_pairs <- function(
 
 A Beta distribution can be written as Beta(s+1, f+1). In the Beta-Bernoulli model (a type of Adaptive RCTs that you studied in the lectures), what does s and f stand for?
 
-A standard uniform distribution can be written as U[0,1]. It can also be written as Beta distribution. What would be the s and f in that case?
+A standard uniform distribution can be written as U[0,1]. It can also be written as Beta distribution. What would be the s and f in that case? 0 and 0, as there's no experiment yet, which means there are exactly 0 successes and failures.
 
 We have a £2 and £2.1 treatment. Fill the s and f for a uniform prior.
 
@@ -340,13 +340,13 @@ plot_beta_pairs(
 
 What is the idea behind Thompson sampling? It is a rule that helps us choose the probabilities for the treatments in the next round based on the last round's results.
 
-It says that Probability(user sees option k in the next round) = Prob(\_\_\_\_\_\_\_\_\_\_\_\_\_).
+It says that Probability(user sees option k in the next round) = Prob(option k was found to be better in the previous round).
 
 ## 2. First round: 10 customers
 
 Five customers are offered each price. Four of five accept £2, and two of five accept £2.1.
 
-For Beta(s+1, f+1), what are s and f for the two offers?
+For Beta(s+1, f+1), what are s and f for the two offers? Note that here, as in the previous code you need to enter the number of successes and failures, s and f, and not s+1 and f+1.
 
 ### Posterior density curves after round 1
 
@@ -390,7 +390,14 @@ plot_beta_distributions(
 )
 ```
 
+
+First note that you'd need to also add data from round 1. Otherwise, we're just not using useful data. so it would be 4+4 and 1+4 for s and f, respectively for the £2 treatment. Similarly for £2.1 it would be 2+2 and 3+0 for s and f, corresponding to £2.1.
+
 Describe what happened at this update.
+
+It seems that the posterior has returned to a nearly 50-50 split again. But notice that the spread of the £2 and £2.1 posterior distributions are not as much as the uniform prior which also had a 50-50 split but was as spread out as it is possible for a Beta distribution to be. 
+
+This tells us that we're more certain of a nearly 50-50 split. Let's determine the exact split using the Thompson sampling rule based on the next plot.
 
 ### Simulate 100,000 updated pairs and plot them
 

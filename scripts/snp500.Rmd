@@ -1,0 +1,202 @@
+---
+title: "snp500"
+output: word_document
+date: "2026-11-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+# install fixest for fixed effects regressions
+# uncomment the next line installing fixest if you don't have the package
+#install.packages("fixest")
+library(fixest)
+library(tidyverse)
+
+# Load into a temporary environment
+e <- new.env()
+load("../data/snp_midterm.RData", envir = e)
+
+# Assign dataframe to new name
+snp500 <- e$df_midterm
+
+# remove temporary environment
+rm(e)
+```
+
+We're going to see what happened to the stock prices of the top 500 companies in the US (from the S&P500 list) few days before and after the mid-term elections, and discuss to what degree we could interpret this analysis causally.
+
+A Diff-in-Diff or Event Study analysis is conducted on a panel dataset. This dataset `snp500` is also a panel, but not in the same way as you saw last class on coffee which was a country-year.
+
+In this analysis, we have a panel of firm-year-day. firm-year is the entity dimension, and day is the time dimension. 
+
+That is to say, that we treat a firm, say Apple Inc, observed in 2010 to be different from the firm observed in 2026, but similar in the few days before and after an election. Let's visually verify this assertion. 
+
+Each time you run this code, it'll select 6 different firms.
+
+```{r}
+# 1. Randomly select 6 firms
+selected_firms <- snp500 %>%
+  distinct(ticker) %>%
+  slice_sample(n = 6) %>%
+  pull(ticker)
+
+# 2. Prepare plotting data
+plot_df <- snp500 %>%
+  filter(ticker %in% selected_firms) %>%
+  mutate(
+    colour_group = if_else(
+      treated == 1,
+      "2026",
+      as.character(year)
+    )
+  )
+
+# 3. Define colours
+control_years <- sort(unique(
+  plot_df$year[plot_df$treated == 0 &
+                 plot_df$year <= 2022]
+))
+
+grey_colours <- setNames(
+  gray.colors(
+    length(control_years),
+    start = 0.85,
+    end = 0.25
+  ),
+  as.character(control_years)
+)
+
+year_colours <- c(
+  grey_colours,
+  "2026" = "#E66100"
+)
+
+# 4. Plot
+ggplot(
+  plot_df,
+  aes(
+    x = days_to_event,
+    y = close,
+    group = firm_year_id,
+    colour = colour_group
+  )
+) +
+  geom_line(linewidth = 0.7, alpha = 0.85) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed",
+    colour = "black",
+    linewidth = 0.4
+  ) +
+  facet_wrap(~ ticker, scales = "free_y") +
+  scale_colour_manual(
+    values = year_colours,
+    name = NULL
+  ) +
+  labs(
+    x = "Days to Election",
+    y = "Closing price of a share ($)",
+    title = "Stock prices around US midterm elections",
+    subtitle = "For randomly selected firms"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+```
+
+Just to be clear, the treated group is 2026, and the control group are the other years, and each group has 500 firms. A firm in 2026 is said to be treated, and the same firm in the other years is said to be in the control group. 
+
+This is not a perfect counterfactual, but it's about as close as we can get to one. In this way, we're trying to do as much of a like-to-like comparison as possible. 
+
+## Number of firms
+
+For each year, we are going to summarize the number of firms observed in a given day relative to the election. But this command won't work. Refer to the syntax summary sheet if that helps or `pakistansmallfirms.Rmd`, and fix this command.
+
+```{r}
+(snp500$days_to_event, snp500$year)
+```
+
+As a bit of trivia, there are 503 companies on a given day because Google, Fox and News Corporation all have 2 classes of shares each and they are all included in the S&P500. 
+
+## Difference-in-Differences, version 1
+
+In the lecture, Simon had discussed difference-in-differences using just the day before the event and the day after. But we can also use difference-in-differences estimation using the same estimating equation that discussed in the lecture using all periods. That's what we will do here. 
+
+Run the following code chunk using the `feols` command instead of the usual `lm` command.
+
+```{r}
+
+model1 <- (close ~ treated:post + treated + post, data = snp500, vcov = ~firm_year_id)
+summary(model1)
+
+```
+
+Note to Sushil: draw diagram for this model.
+
+We interpret the estimate of the `treated:post` as a difference-in-difference estimate. It is the average change in price between the 30 days prior to, and the 11 days following the election for 2026, relative to any other midterm election year from 2010. This coefficient is insignificant.
+
+Let us suppose that there is one person who owns 1/500 of a share of each of these 503 assets. This is perhaps, a suboptimal financial strategy, but it's a gross approximation for holding 1 share of an S&P500 index fund. I could've weighted these prices to reflect the true weighting of the S&P500, but it's a bit involved. So let us assume just for this problem set, that the S&P500 is weighted equally.
+
+We can interpret the result above as saying: if one owned a share of S&P500 in 2026, they wouldn't have lost any money on average (due to statistical insignificance) in the 11 days after the midterms compared to the 30 days before, relative to their gains/losses in any other midterm election. 
+
+Causality refers to what the "treatment" exactly means, and the parallel trends assumption which we will come to at the end of this problem set. Right now, we're just taking the regression results very literally.
+
+## Difference-in-Differences version 2
+
+Note what's changed in this next regression. Instead of a treated and post dummy, I've added `days_to_event` and `firm_year_id` fixed effects. So instead of adding a dummy for treated and post, the fixed effects can be interpreted as adding 502*5 = 2510 dummies for firm-years and 41 dummies for days relative to the election. Or equivalently as a within transformation.
+
+```{r}
+
+model2 <- feols(close ~ treated:post | days_to_event + firm_year_id, data = snp500, vcov = ~firm_year_id)
+summary(model2)
+
+```
+
+Previously, we compared all firms in 2026 to all firms in other years, and all days after the election to all days before the election. 
+
+What are we comparing in the above regression?
+
+## Event study
+
+What model is this estimating? In other words, what's changed compared to the previous model?
+
+```{r}
+es <- feols(
+  close ~ i(days_to_event, treated, ref = -1) | firm_year_id + days_to_event,
+  data = snp500,
+  cluster = ~firm_year_id
+)
+
+summary(es)
+```
+
+## Visualizing event-study estimates
+
+Verify that the coefficient estimates are the same as in the table above.
+
+```{r}
+iplot(
+  es,
+  ref.line = 0,
+  xlab = "Days to election",
+  ylab = "DiD estimate",
+  main = "",
+  ci_level = 0.99
+)
+```
+
+Someone sees the plot and tells you that the parallel trends assumption is more-or-less satisfied because of how the pre-trend looks. How would you add nuance to their statement?
+
+Describe a scenario where the pre-trends are flat as it looks here, but parallel trends may still be violated. 
+
+## Effects on the stock market
+
+So, did the stock market react differently after the 2026 US midterm elections compared to other midterms?
+
+I have intentionally defined the variable `days_to_event` vaguely. Actually, it's unclear what the 2026 midterm election "event" really signified with respect to the equity market. Was it about an unexpected win by the Democrats? Was it about Democrats win and their negative views on AI investments? Was it related to the NVIDIA scandal, and it affected all other companies in the index? We could go on. This probably reflects true events in the real world, where data analysis that's conducted thoughtfully might give you convincing results, but the true underlying causes and how they interact might be complex.
+

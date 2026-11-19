@@ -29,11 +29,15 @@ Let's study how extreme temperatures may influence coffee production.
 
 What is the unit of analysis in this dataset?
 
+It's a country-year. This is a classic panel or longitudinal dataset, following countries over time.
+
 ## Visualizing panel data
 
 Let's visualize coffee production against average annual temperatures.
 
 How do you interpret the plot below --- What is happening to `avgTemp` over the years? What about `ln_coffee_prod`? 
+
+Note that for the code below, the only thing that's relevant for the module is to know that `ggplot` makes plots, `geom_point()` can be used to make a scatterplot, and the `aes()` option in the ggplot line contains the `x` and `y` variables that are plotted on the plot below. 
 
 ```{r scatter-coffee-temp-year}
 ggplot(coffee, aes(x = avgTemp, y = ln_coffee_prod, colour = year)) +
@@ -57,6 +61,14 @@ ggplot(coffee, aes(x = avgTemp, y = ln_coffee_prod, colour = year)) +
   theme(legend.position = "right")
 
 ```
+
+Each dot in this plot is a country-year. As the legend says, the lighter colours are for earlier years (like 1961) and the darker colours are for later years like 2024.
+
+We see a common pattern across all countries, that temperatures and coffee production both increase over the years. The light colours are usually on the bottom-left. The darker colours are usually on the right of lighter colours, meaning that temperatures might be increasing in general. The darker colours are also generally above the light colour points, meaning that coffee production is also increasing. This might seem-counterintuitive at first, but if we note that the demand for coffee has been increasing, along with an increase in labour and weather-resistant coffee bean varieties, then this pattern is not so surprising.
+
+Next, note that the distance between the dark and light points is different for different clouds of points, which further indicates that each country might have their own trends in addition to the common pattern of temperatures and coffee production increasing over time across countries.
+
+We can verify this in the next plot.
 
 If you hover over the points in the plot below, you'll see an informational pop-up. 
 
@@ -105,8 +117,11 @@ plot_ly(
 ```
 
 
-The average temperature per year in a country may hide fluctuations in a given year, say, across months. So we'll use `dummy_min4_xtremeMonths`.
-What does the dummy `dummy_min4_xtremeMonths` mean?
+Please verify that each cloud of points corresponds to a country. It's admittedly harder to verify that in the 18-28 degree C temperature range, but I hope this pattern is generally visible.
+
+Ideally, coffee needs about 8 months in the temperature range of 18-26 degree C for "good production". If this is our measure of good weather, then the average temperatures may be hiding this. Consider a year with 5 months of 10 degree Celcius, and 7 months of 27 degrees. The average annual temperature comes out to be around 19.9 degrees. This is clearly a year of extreme temperatures, but if we went by the average annual temperature of 19.9, it hides the fact that the year was quite extreme, and not ideal for coffee production.
+
+We'll use `dummy_min4_xtremeMonths` which is 1 when there are at least 4 months of temperatures outside the 18-26 range, and 0 otherwise. It is a better proxy or measurement for a year of extreme temperatures (with regards to coffee cultivation).
 
 Let's visualize this. 
 
@@ -171,9 +186,17 @@ m1 <- feols(ln_coffee_prod ~ dummy_min4_xtremeMonths, data = coffee, vcov = ~cou
 summary(m1)
 ```
 
-Note for Sushil: Derive log interpretation in class. 
+This is a model with an intercept and a dummy. 
 
-How would you interpret this if it was -0.078 instead?
+As usual, the estimate for the intercept is the average log coffee production in a non-extreme year. The estimate for `dummy_min4_xtremeMonths` is the difference in average log coffee production for an extreme year compared to a non-extreme year. 
+
+It says that extreme years have -0.78 log points less coffee production on average compared to non-extreme years. -0.78 log points is hard to interpret. So we can use an approximation which is 100 times -0.78, giving 78% difference in averages. You can also use a formula which would be more accurate, which is $100*(e^{-0.78} - 1) = -54.15\%$. If you're interested in how the formula is derived, please email me.  
+
+It turns out that for very small numbers (like say -0.078 instead of -0.78), the formula and the approximation give almost similar answers.
+
+A 54% difference in averages is quite big, it says that coffee production is half in an extreme year compare to a non-extreme year. It needs to be interpreted carefully for a few reasons. One, it's comparing different countries over different years. Would it be fair to compare Brazil, the world's largest coffee producer to say, Spain, one of the smaller producers? Yes, only if you're interested in a high-level view, but our object of interest is the weather (a short term variable), and the difference between Brazil and Spain might be comparing the climate (a long-run variable). Moreover, we might be comparing 2024 to 1961, and it is possible that over this time, people may have developed more harsh-weather-resistant coffee beans or other compensating technology over this time. 
+
+Secondly, the p-value is 0.13, which means that there is such large variation in the difference in averages between extreme years and non-extreme years. The large variation comes from the narrative in the previous paragraph.
 
 ## Adding year fixed effects
 
@@ -185,17 +208,36 @@ m2 <- feols(ln_coffee_prod ~ dummy_min4_xtremeMonths | year, data = coffee, vcov
 summary(m2)
 ```
 
+The `feols` command also runs a regression and the syntax is (`feols(y ~ x | fe, data = dataset_name)`). The `vcov` option has to do with the adjustment of standard errors, in a way that's beyond the scope of the module. Here, as you can tell we're using the `year` variable to do a model with year fixed effects.
+
+You have seen different ways to interpret panel data models with fixed effects in class. The within framework is a convenient interpretation to use here. In fact, the `feols` command makes the computer do a within transformation while performing the complicated regression calculation that produces the results above.
+
+Using the within framework, we can say that within a given year, extreme years have about 55% (using the exact formula, or 80% using the approximation) less coffee production on average compared to non-extreme years. We are still comparing differences across countries. So within the same year, we're comparing say, Brazil and Spain. Therefore, this estimate for `dummy_min4_xtremeMonths` includes the effect of Brazil generally having more temperature years than Spain does. So we've accounted for worldwide changes in technology for coffee cultivation, the size of the labour market (coffee farmers for example) increasing in general around the world etc. But we haven't accounted for different climates. 
+
+For a step-by-step visualization of why we can say "within year", first note that this model could've been written just as above, but instead of adding "year fixed effects" in the manner above, we could've added a dummy variable for each year, as mentioned in the panel data lecture. To understand why dummy variables can be imagined as a "within" transformation, Tutorials 4 and 5 might be helpful.
+
+The standard error and p-values which are both somewhat large, clarifies this story to some extent too. 
+
+Remember the first scatterplot we drew, countries seem to have vastly different temperature ranges and coffee production. 
+
+
 ## Adding country fixed effects
 
-Take a moment: this code will work, but it's wrong as it doesn't have country fixed effects. Add country fixed effects and estimate this model.
+Note how I've added country fixed effects to the model below. I could've also used the variable `countryName`, which is just the full name of the country.
 
 ```{r reg-coffee-dummy-yfe-cfe}
 # run a fixed effects regression with year and country fixed effects
-m3 <- feols(ln_coffee_prod ~ dummy_min4_xtremeMonths | year, data = coffee, vcov = ~countryCode)
+m3 <- feols(ln_coffee_prod ~ dummy_min4_xtremeMonths | year + countryCode, data = coffee, vcov = ~countryCode)
 summary(m3)
 ```
 
-What do you learn from the estimation of the model above? It might help to use the "within" framework in your explanation.
+Using the "within" framework again, we can say that extreme years have 24% less coffee production (using the exact formula, 27% using the approximation) on average compared to non-extreme years within years and countries. Before interpreting this, note the 3 kinds of variation we visualized in the first scatterplot. There's weather and coffee production which both have a common yearly component across all countries. Then there's the differences between countries for any chosen year. We also saw that the pattern of going from light to dark colours, was not the same within a country over time. In some countries, it was very steep, in some, quite shallow, and in others, negative.
+
+The above fixed effects model controls for common year effects across all countries, common country effects across all years. And we're now left with within-country change over time.
+
+Is this causal? Probably not. For instance, weather compensating factors (like labour or coffee-bean-varieties) might be employed differently in Brazil over time, compared to say, the US over time. 
+
+But it's now at least a more sensible comparison than the previous regression results. 
 
 ## Same regression done differently
 
@@ -211,15 +253,26 @@ m4 <- feols(ln_coffee_prod ~ dummy_min4_xtremeMonths + countryavg_dummy | year, 
 summary(m4) 
 ```
 
+This is the Mundlak regression.
 
-The Mundlak term accounts for cross-country averages. If you recall the interpretation of dummy variables, and the Least Square Dummy Variable (LSDV) interpretation, it ALSO accounts for cross-country averages!
+Here the coefficient estimate for `dummy_min4_xtremeMonths` is slightly different from the previous estimate, and that's because we have an unbalanced panel --- each of the 78 countries in the dataset don't have all years of data from 1961-2024. 
+
+For this module, what you'd need to know is that if you have all the years for all the countries, the coefficient estimate for `dummy_min4_xtremeMonths` in a Mundlak regression would be the exact same as in the fixed effects regression above.
+
+The Mundlak term accounts for cross-country averages. If you recall the interpretation of dummy variables, and the Least Square Dummy Variable (LSDV) interpretation, it ALSO accounts for cross-country averages! They're both equivalent models but just implemented differently.
+
+Why do we have the Mundlak regression and why is it important? If the coefficient for the country average of the dummy variable is significant, then we have a case in favour of using a model with country fixed effects. If insignificant, then we have a case against using a model with country fixed effects.
 
 ## Choosing the right model.
 
 Based on the Mundlak regression, which model would you choose from the ones we've done?
 
+Since the Mundlak term is statistically insignificant in this case, it suggests that we should use a model without country fixed effects. That conclusion might feel absurd, as we did discuss that a country like Brazil might have completely different climatic conditions compared to Spain, so we do need to account for those differences. How do we reconcile these apparently contradictory ideas?
+
+The high p-value for the Mundlak term is literally suggesting that even over the years, a given country may not have experiences of going more than 4 months with extreme temperatures. I'll leave this as an exercise to you, but you can verify that some of the largest coffee producers and even many of the smaller ones don't really have many years with more than 4 months of extreme temperatures in this dataset. 
+
+Moreover, the same measurement issue as the annual temperatures may apply to the month measure too. It's possible that a month that's classified as being "not extreme" have 2 weeks of extreme weather and 2 weeks of normal weather, which aligns closely with the reality of climate change related events around the world in the past decade or so. Under 2 weeks of extreme weather (say 27 degrees), and 2 weeks of normal weather (say 24), the average monthly temperature is 26, which gets mistakenly classified as not extreme. 
+
 What is your conclusion about the effect of extreme temperatures on coffee production?
 
-We had imperfect temperature data for this analysis. A month with an average of 24 degree temperature, could be either due to (1) a bad month: 2 weeks of 27 degrees and 2 weeks of 21 degrees; or (2) a good month: all 4 weeks with 24 degrees. That is, some of the dummies stored as 0s may not precisely measure our object of interest which is --- was it a bad month for coffee production temperature-wise?
-
-The analysis still tells us that at an aggregate level, the climate hasn't affected coffee production much amongst countries that were already coffee producers. Again, that is probably not saying much as the coffee producers might be getting hotter, but still have stayed within the 18-26 range from 1961-2024, and it's possible that we still haven't seen the worst of climate change yet.
+So analysis still tells us that at an aggregate level, the climate hasn't affected coffee production much amongst countries that were already coffee producers. Again, that is probably not saying much as we may have used an inappropriate measure for extreme weather. Moreover, while the coffee producers might be getting hotter, they still might have stayed within the 18-26 range from 1961-2024, and it's possible that we still haven't seen the worst of climate change yet.
